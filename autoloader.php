@@ -33,44 +33,54 @@ function hvp_autoloader($class) {
     static $classmap;
     if (!isset($classmap)) {
         $classmap = array(
-        // Core.
-        'H5PCore' => 'library/h5p.classes.php',
-        'H5PFrameworkInterface' => 'library/h5p.classes.php',
-        'H5PContentValidator' => 'library/h5p.classes.php',
-        'H5PValidator' => 'library/h5p.classes.php',
-        'H5PStorage' => 'library/h5p.classes.php',
-        'H5PExport' => 'library/h5p.classes.php',
-        'H5PDevelopment' => 'library/h5p-development.class.php',
-        'H5PFileStorage' => 'library/h5p-file-storage.interface.php',
-        'H5PDefaultStorage' => 'library/h5p-default-storage.class.php',
-        'H5PEventBase' => 'library/h5p-event-base.class.php',
-        'H5PMetadata' => 'library/h5p-metadata.class.php',
+            // Core.
+            'H5PExport' => 'library/h5p.classes.php',
+            'H5PDefaultStorage' => 'library/h5p-default-storage.class.php',
+            'H5PEventBase' => 'library/h5p-event-base.class.php',
 
-        // Editor.
-        'H5peditor' => 'editor/h5peditor.class.php',
-        'H5PEditorAjax' => 'editor/h5peditor-ajax.class.php',
-        'H5PEditorAjaxInterface' => 'editor/h5peditor-ajax.interface.php',
-        'H5peditorFile' => 'editor/h5peditor-file.class.php',
-        'H5peditorStorage' => 'editor/h5peditor-storage.interface.php',
+            // Reporting.
+            'H5PReport' => 'reporting/h5p-report.class.php',
+            'H5PReportXAPIData' => 'reporting/h5p-report-xapi-data.class.php',
+            'ChoiceProcessor' => 'reporting/type-processors/choice-processor.class.php',
+            'CompoundProcessor' => 'reporting/type-processors/compound-processor.class.php',
+            'FillInProcessor' => 'reporting/type-processors/fill-in-processor.class.php',
+            'LongChoiceProcessor' => 'reporting/type-processors/long-choice-processor.class.php',
+            'MatchingProcessor' => 'reporting/type-processors/matching-processor.class.php',
+            'TrueFalseProcessor' => 'reporting/type-processors/true-false-processor.class.php',
+            'IVOpenEndedQuestionProcessor' => 'reporting/type-processors/iv-open-ended-question-processor.class.php',
+            'TypeProcessor' => 'reporting/type-processors/type-processor.class.php',
+            'DocumentationToolProcessor' => 'reporting/type-processors/compound/documentation-tool-processor.class.php',
+            'GoalsPageProcessor' => 'reporting/type-processors/compound/goals-page-processor.class.php',
+            'GoalsAssessmentPageProcessor' => 'reporting/type-processors/compound/goals-assessment-page-processor.class.php',
+            'StandardPageProcessor' => 'reporting/type-processors/compound/standard-page-processor.class.php',
 
-        // Reporting.
-        'H5PReport' => 'reporting/h5p-report.class.php',
-        'H5PReportXAPIData' => 'reporting/h5p-report-xapi-data.class.php',
-        'ChoiceProcessor' => 'reporting/type-processors/choice-processor.class.php',
-        'CompoundProcessor' => 'reporting/type-processors/compound-processor.class.php',
-        'FillInProcessor' => 'reporting/type-processors/fill-in-processor.class.php',
-        'LongChoiceProcessor' => 'reporting/type-processors/long-choice-processor.class.php',
-        'MatchingProcessor' => 'reporting/type-processors/matching-processor.class.php',
-        'TrueFalseProcessor' => 'reporting/type-processors/true-false-processor.class.php',
-        'IVOpenEndedQuestionProcessor' => 'reporting/type-processors/iv-open-ended-question-processor.class.php',
-        'TypeProcessor' => 'reporting/type-processors/type-processor.class.php',
-        'DocumentationToolProcessor' => 'reporting/type-processors/compound/documentation-tool-processor.class.php',
-        'GoalsPageProcessor' => 'reporting/type-processors/compound/goals-page-processor.class.php',
-        'GoalsAssessmentPageProcessor' => 'reporting/type-processors/compound/goals-assessment-page-processor.class.php',
-        'StandardPageProcessor' => 'reporting/type-processors/compound/standard-page-processor.class.php',
-
-        // Plugin specific classes are loaded by Moodle.
+            // Plugin specific classes are loaded by Moodle.
         );
+
+        // Use the core library instead of the plugin library if it exists. This will prevent class name collisions.
+        // See h5p/classes/local/library/handler.php::get_class_list() for classes loaded by core.
+        if (class_exists(\core_h5p\local\library\handler::class)) {
+            core_h5p\local\library\handler::register();
+        } else {
+            $classmap = array_merge($classmap, array(
+                // Core.
+                'H5PCore' => 'library/h5p.classes.php',
+                'H5PFrameworkInterface' => 'library/h5p.classes.php',
+                'H5PContentValidator' => 'library/h5p.classes.php',
+                'H5PValidator' => 'library/h5p.classes.php',
+                'H5PStorage' => 'library/h5p.classes.php',
+                'H5PDevelopment' => 'library/h5p-development.class.php',
+                'H5PFileStorage' => 'library/h5p-file-storage.interface.php',
+                'H5PMetadata' => 'library/h5p-metadata.class.php',
+
+                // Editor.
+                'H5peditor' => 'editor/h5peditor.class.php',
+                'H5peditorStorage' => 'editor/h5peditor-storage.interface.php',
+                'H5PEditorAjaxInterface' => 'editor/h5peditor-ajax.interface.php',
+                'H5PEditorAjax' => 'editor/h5peditor-ajax.class.php',
+                'H5peditorFile' => 'editor/h5peditor-file.class.php',
+            ));
+        }
     }
 
     if (isset($classmap[$class])) {
