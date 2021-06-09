@@ -42,7 +42,15 @@ class mod_hvp_renderer extends plugin_renderer_base {
      * @param array $libraries Array of libraries indexed by the library's machineName
      * @param string $embedtype Possible values: div, iframe, external, editor
      */
-    public function hvp_alter_styles(&$scripts, $libraries, $embedtype) {
+    public function hvp_alter_styles(&$scripts, $libraries, $embedtype)
+    {
+        global $CFG;
+        if (isset($libraries['H5P.Accordion']) && $libraries['H5P.Accordion']['majorVersion'] == '1') {
+            $styles[] = (object)array(
+                    'path' => 'https://github.com/catalyst/h5p-accordion/blob/navitas-lbic-2019_fix_mdl_35_accordion_icon/h5p-accordion.css',
+                    'version' => '?ver=20210609142330',
+            );
+        }
     }
 
     /**
