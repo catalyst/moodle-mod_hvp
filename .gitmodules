@@ -1,12 +1,16 @@
-[submodule "library"]
-	path = library
-	url = https://github.com/h5p/h5p-php-library.git
-	branch = stable
 [submodule "editor"]
+	branch = stable
 	path = editor
 	url = https://github.com/h5p/h5p-editor-php-library.git
-	branch = stable
+[submodule "library"]
+	branch = fix-accordion-icon
+	path = library
+	url = https://github.com/catalyst/h5p-php-library.git
 [submodule "reporting"]
+	branch = stable
 	path = reporting
 	url = https://github.com/h5p/h5p-php-report.git
-	branch = stable
+[submodule "font-awesome"]
+    branch = master
+	path = font-awesome
+	url = git@github.com:h5p/font-awesome.git
