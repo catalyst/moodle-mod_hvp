@@ -64,6 +64,8 @@ $string['removeoldlogentries'] = 'Remove old H5P log entries';
 $string['removeoldmobileauthentries'] = 'Remove old H5P mobile auth entries';
 
 // Admin settings.
+$string['backuplibraries'] = 'Include libraries in backup';
+$string['backuplibraries_help'] = 'Excluding libraries from backup can improve performance during backup. Backups without libraries can only be restored to the same site.';
 $string['displayoptiondownloadnever'] = 'Never';
 $string['displayoptiondownloadalways'] = 'Always';
 $string['displayoptiondownloadpermission'] = 'Only if user has permissions to export H5P';

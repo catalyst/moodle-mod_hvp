@@ -72,6 +72,15 @@ if ($ADMIN->fulltree) {
             1)
     );
 
+    // Include libraries in backup.
+    $settings->add(
+        new admin_setting_configcheckbox('mod_hvp_backup_libraries',
+            get_string('backuplibraries', 'hvp'),
+            get_string('backuplibraries_help', 'hvp'),
+            1
+        )
+    );
+
     $choices = array(
         H5PDisplayOptionBehaviour::NEVER_SHOW => get_string('displayoptiondownloadnever', 'hvp'),
         H5PDisplayOptionBehaviour::ALWAYS_SHOW => get_string('displayoptiondownloadalways', 'hvp'),
