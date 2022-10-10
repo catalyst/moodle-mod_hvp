@@ -107,12 +107,7 @@ class mod_hvp_mod_form extends moodleform_mod {
 
         // Grade settings.
         $this->standard_grading_coursemodule_elements();
-        $mform->removeElement('grade');
-
-        // Max grade.
-        $mform->addElement('text', 'maximumgrade', get_string('maximumgrade', 'hvp'));
-        $mform->setType('maximumgrade', PARAM_INT);
-        $mform->setDefault('maximumgrade', 10);
+        $mform->setDefault('grade', 10);
 
         // Standard course module settings.
         $this->standard_coursemodule_elements();
@@ -145,31 +140,6 @@ class mod_hvp_mod_form extends moodleform_mod {
         }
     }
 
-    /**
-     * Sets max grade in default values from grade item
-     *
-     * @param $content
-     * @param $defaultvalues
-     */
-    private function set_max_grade($content, &$defaultvalues) {
-        // Set default maxgrade.
-        if (isset($content) && isset($content['id'])
-            && isset($defaultvalues) && isset($defaultvalues['course'])) {
-
-            // Get the gradeitem and set maxgrade.
-            $gradeitem = grade_item::fetch(array(
-                'itemtype' => 'mod',
-                'itemmodule' => 'hvp',
-                'iteminstance' => $content['id'],
-                'courseid' => $defaultvalues['course']
-            ));
-
-            if (isset($gradeitem) && isset($gradeitem->grademax)) {
-                $defaultvalues['maximumgrade'] = $gradeitem->grademax;
-            }
-        }
-    }
-
     public function data_preprocessing(&$defaultvalues) {
         global $DB;
         $core = \mod_hvp\framework::instance();
@@ -179,8 +149,6 @@ class mod_hvp_mod_form extends moodleform_mod {
             // Load Content.
             $content = $core->loadContent($defaultvalues['id']);
         }
-
-        $this->set_max_grade($content, $defaultvalues);
 
         // Aaah.. we meet again h5pfile!
         $draftitemid = file_get_submitted_draft_itemid('h5pfile');
@@ -321,11 +289,6 @@ class mod_hvp_mod_form extends moodleform_mod {
      */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
-
-        // Validate max grade as a non-negative numeric value.
-        if (!is_numeric($data['maximumgrade']) || $data['maximumgrade'] < 0) {
-            $errors['maximumgrade'] = get_string('maximumgradeerror', 'hvp');
-        }
 
         if ($data['h5paction'] === 'upload') {
             // Validate uploaded H5P file.
