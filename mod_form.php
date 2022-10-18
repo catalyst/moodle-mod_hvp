@@ -107,7 +107,6 @@ class mod_hvp_mod_form extends moodleform_mod {
 
         // Grade settings.
         $this->standard_grading_coursemodule_elements();
-        $mform->setDefault('grade', 10);
 
         // Standard course module settings.
         $this->standard_coursemodule_elements();
@@ -140,6 +139,31 @@ class mod_hvp_mod_form extends moodleform_mod {
         }
     }
 
+    /**
+     * Sets grade type in default values from grade item
+     *
+     * @param $content
+     * @param $defaultvalues
+     */
+    private function set_grade_type($content, &$defaultvalues) {
+        // Set default maxgrade.
+        if (isset($content) && isset($content['id'])
+            && isset($defaultvalues) && isset($defaultvalues['course'])) {
+
+            // Get the gradeitem and set maxgrade.
+            $gradeitem = grade_item::fetch(array(
+                'itemtype' => 'mod',
+                'itemmodule' => 'hvp',
+                'iteminstance' => $content['id'],
+                'courseid' => $defaultvalues['course']
+            ));
+
+            if (isset($gradeitem) && isset($gradeitem->gradetype)) {
+                $defaultvalues['grade'] = $gradeitem->gradetype;
+            }
+        }
+    }
+
     public function data_preprocessing(&$defaultvalues) {
         global $DB;
         $core = \mod_hvp\framework::instance();
@@ -149,6 +173,8 @@ class mod_hvp_mod_form extends moodleform_mod {
             // Load Content.
             $content = $core->loadContent($defaultvalues['id']);
         }
+
+        $this->set_grade_type($content, $defaultvalues);
 
         // Aaah.. we meet again h5pfile!
         $draftitemid = file_get_submitted_draft_itemid('h5pfile');
