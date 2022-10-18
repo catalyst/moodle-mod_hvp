@@ -756,14 +756,11 @@ function xmldb_hvp_upgrade($oldversion) {
         2020082800,
         2020091500,
         2020112600,
-<<<<<<< HEAD
         2022012001,
         2023122501,
         2024112101,
         2024120903,
-=======
         2026050600,
->>>>>>> 8366f6b (fix/AU-7820 Add clearing parameters recursively for all content)
     ];
 
     foreach ($upgrades as $version) {
