@@ -569,6 +569,45 @@ function hvp_upgrade_2020112600() {
 }
 
 /**
+ * Add indexes to improve query performance
+ *
+ * Add index for user hvp and sub content in content_user_data
+ * Add index for library_id, hvp_id and dependency_type in contents_libraries
+ * Add index for hvp_id in contents_libraries
+ */
+function hvp_upgrade_2022012001() {
+    global $DB;
+    $dbman = $DB->get_manager();
+
+    // Define index user_id-hvp_id-sub_content_id (not unique) to be added to hvp_content_user_data.
+    $table = new xmldb_table('hvp_content_user_data');
+    $index = new xmldb_index('user_id-hvp_id-sub_content_id', XMLDB_INDEX_NOTUNIQUE, ['user_id', 'hvp_id', 'sub_content_id']);
+
+    // Conditionally launch add index user_id-hvp_id-sub_content_id.
+    if (!$dbman->index_exists($table, $index)) {
+        $dbman->add_index($table, $index);
+    }
+
+    // Define index library_id-hvp_id-dependency_type (not unique) to be added to hvp_contents_libraries.
+    $table = new xmldb_table('hvp_contents_libraries');
+    $index = new xmldb_index('library_id-hvp_id-dependency_type', XMLDB_INDEX_NOTUNIQUE, ['library_id', 'hvp_id', 'dependency_type']);
+
+    // Conditionally launch add index library_id-hvp_id-dependency_type.
+    if (!$dbman->index_exists($table, $index)) {
+        $dbman->add_index($table, $index);
+    }
+
+    // Define index hvp_id (not unique) to be added to hvp_contents_libraries.
+    $table = new xmldb_table('hvp_contents_libraries');
+    $index = new xmldb_index('hvp_id', XMLDB_INDEX_NOTUNIQUE, ['hvp_id']);
+
+    // Conditionally launch add index hvp_id.
+    if (!$dbman->index_exists($table, $index)) {
+        $dbman->add_index($table, $index);
+    }
+}
+
+/**
  * Hvp module upgrade function.
  *
  * @param string $oldversion The version we are upgrading from
@@ -594,6 +633,7 @@ function xmldb_hvp_upgrade($oldversion) {
         2020082800,
         2020091500,
         2020112600,
+        2022012001,
     ];
 
     foreach ($upgrades as $version) {
