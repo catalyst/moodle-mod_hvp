@@ -159,7 +159,13 @@ class mod_hvp_mod_form extends moodleform_mod {
             ));
 
             if (isset($gradeitem) && isset($gradeitem->gradetype)) {
-                $defaultvalues['grade'] = $gradeitem->gradetype;
+                if ($gradeitem->gradetype == GRADE_TYPE_SCALE) {
+                    $grade = -$gradeitem->scaleid;
+                } else {
+                    $grade = $gradeitem->gradetype;
+                }
+
+                $defaultvalues['grade'] = $grade;
             }
         }
     }
