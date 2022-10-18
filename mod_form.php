@@ -158,7 +158,7 @@ class mod_hvp_mod_form extends moodleform_mod {
                 'courseid' => $defaultvalues['course']
             ));
 
-            if (isset($gradeitem) && isset($gradeitem->gradetype)) {
+            if ($gradeitem && isset($gradeitem->gradetype)) {
                 if ($gradeitem->gradetype == GRADE_TYPE_SCALE) {
                     $grade = -$gradeitem->scaleid;
                 } else {
@@ -166,6 +166,9 @@ class mod_hvp_mod_form extends moodleform_mod {
                 }
 
                 $defaultvalues['grade'] = $grade;
+            } else {
+                // We have content but no grade item? It must have been created with GRADE_TYPE_NONE.
+                $defaultvalues['grade'] = GRADE_TYPE_NONE;
             }
         }
     }
