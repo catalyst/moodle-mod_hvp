@@ -380,14 +380,16 @@ function hvp_grade_item_update($hvp, $grades=null) {
 
     $params = array('itemname' => $hvp->name, 'idnumber' => $hvp->cmidnumber);
 
-    if ($hvp->grade > 0) {
-        $params['gradetype'] = GRADE_TYPE_VALUE;
-        $params['grademax']  = $hvp->grade;
-    } else if ($hvp->grade < 0) {
-        $params['gradetype'] = GRADE_TYPE_SCALE;
-        $params['scaleid']   = -$hvp->grade;
-    } else {
-        $params['gradetype'] = GRADE_TYPE_NONE;
+    if (isset($hvp->grade)) {
+        if ($hvp->grade > 0) {
+            $params['gradetype'] = GRADE_TYPE_VALUE;
+            $params['grademax']  = $hvp->grade;
+        } else if ($hvp->grade < 0) {
+            $params['gradetype'] = GRADE_TYPE_SCALE;
+            $params['scaleid']   = -$hvp->grade;
+        } else {
+            $params['gradetype'] = GRADE_TYPE_NONE;
+        }
     }
 
     // Recalculate rawgrade relative to grademax.
