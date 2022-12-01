@@ -106,17 +106,15 @@ function hvp_get_core_assets($context) {
     $settings['loadedJs'] = array();
     $settings['loadedCss'] = array();
 
-    // Make sure files are reloaded for each plugin update.
-    $cachebuster = \hvp_get_cache_buster();
-
     // Use relative URL to support both http and https.
     $liburl = \mod_hvp\view_assets::getsiteroot() . '/mod/hvp/library/';
     $relpath = '/' . preg_replace('/^[^:]+:\/\/[^\/]+\//', '', $liburl);
 
     // Add core stylesheets.
     foreach (\H5PCore::$styles as $style) {
-        $settings['core']['styles'][] = $relpath . $style . $cachebuster;
-        $PAGE->requires->css(new moodle_url($liburl . $style . $cachebuster));
+        $url = generate_css_url('library/' . $style);
+        $settings['core']['styles'][] = $url->out(false);
+        $PAGE->requires->css($url);
     }
     // Add core JavaScript.
     foreach (\H5PCore::$scripts as $script) {
@@ -172,6 +170,26 @@ function generate_js_url(string $scriptpath): moodle_url {
 }
 
 /**
+ * Generates a cacheable URL to serve a CSS file.
+ *
+ * @param string $cssfile
+ * @return moodle_url
+ */
+function generate_css_url(string $cssfile): moodle_url {
+    global $CFG;
+
+    $systemcontext = \context_system::instance();
+
+    if (empty($CFG->slasharguments)) {
+        $filespathbase = '/pluginfile.php?file=/' . $systemcontext->id . '/mod_hvp/cssfile/';
+    } else {
+        $filespathbase = '/pluginfile.php/' . $systemcontext->id . '/mod_hvp/cssfile/';
+    }
+
+    return new moodle_url($filespathbase . $cssfile);
+}
+
+/**
  * Add required assets for displaying the editor.
  *
  * @param int $id Content being edited. null for creating new content
@@ -205,12 +223,9 @@ function hvp_add_editor_assets($id = null, $mformid = null) {
     $url = \mod_hvp\view_assets::getsiteroot() . '/mod/hvp/';
     $url = '/' . preg_replace('/^[^:]+:\/\/[^\/]+\//', '', $url);
 
-    // Make sure files are reloaded for each plugin update.
-    $cachebuster = \hvp_get_cache_buster();
-
     // Add editor styles.
     foreach (H5peditor::$styles as $style) {
-        $assets['css'][] = $url . 'editor/' . $style . $cachebuster;
+        $assets['css'][] = generate_css_url('editor/' . $style)->out();
     }
 
     // Add editor JavaScript.
@@ -286,15 +301,11 @@ function hvp_add_editor_assets($id = null, $mformid = null) {
  * Add core JS and CSS to page.
  *
  * @param moodle_page $page
- * @param moodle_url|string $liburl
+ * @param string $relpath
  * @param array|null $settings
  * @throws \coding_exception
  */
-function hvp_admin_add_generic_css_and_js($page, $liburl, $settings = null) {
-
-    // TODO: remove this and have it given as a parameter when CSS is fixed.
-    $relpath = '/' . preg_replace('/^[^:]+:\/\/[^\/]+\//', '', $liburl);
-
+function hvp_admin_add_generic_css_and_js($page, $relpath, $settings = null) {
     // @codingStandardsIgnoreLine
     foreach (\H5PCore::$adminScripts as $script) {
         $page->requires->js($relpath . $script, true);
@@ -313,22 +324,11 @@ function hvp_admin_add_generic_css_and_js($page, $liburl, $settings = null) {
     );
 
     $page->requires->data_for_js('H5PAdminIntegration', $settings, true);
-    $page->requires->css(new moodle_url($liburl . 'styles/h5p.css' . hvp_get_cache_buster()));
-    $page->requires->css(new moodle_url($liburl . 'styles/h5p-admin.css' . hvp_get_cache_buster()));
+    $page->requires->css(generate_css_url($relpath . 'styles/h5p.css'));
+    $page->requires->css(generate_css_url($relpath . 'styles/h5p-admin.css'));
 
     // Add settings.
     $page->requires->data_for_js('h5p', hvp_get_core_settings(\context_system::instance()), true);
-}
-
-/**
- * Get a query string with the plugin version number to include at the end
- * of URLs. This is used to force the browser to reload the asset when the
- * plugin is updated.
- *
- * @return string
- */
-function hvp_get_cache_buster() {
-    return '?ver=' . get_config('mod_hvp', 'version');
 }
 
 /**

@@ -117,7 +117,7 @@ $settings['libraryList']['listHeaders'] = array(
 $liburl = \mod_hvp\view_assets::getsiteroot() . '/mod/hvp/library/';
 $relpath = '/' . preg_replace('/^[^:]+:\/\/[^\/]+\//', '', $liburl);
 
-hvp_admin_add_generic_css_and_js($PAGE, $liburl, $settings);
+hvp_admin_add_generic_css_and_js($PAGE, $relpath, $settings);
 $PAGE->requires->js($relpath . 'js/h5p-library-list.js', true);
 
 // RENDER PAGE OUTPUT.
