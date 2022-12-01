@@ -81,8 +81,8 @@ function hvp_get_core_settings($context) {
         'crossoriginRegex' => isset($CFG->mod_hvp_crossoriginRegex) ? $CFG->mod_hvp_crossoriginRegex : null,
         'crossoriginCacheBuster' => isset($CFG->mod_hvp_crossoriginCacheBuster) ? $CFG->mod_hvp_crossoriginCacheBuster : null,
         'libraryConfig' => $core->h5pF->getLibraryConfig(),
-        'pluginCacheBuster' => hvp_get_cache_buster(),
-        'libraryUrl' => $basepath . 'mod/hvp/library/js'
+        'pluginCacheBuster' => '',
+        'libraryUrl' => $basepath . '/lib/javascript.php/' . get_jsrev() . '/library/js'
     );
 
     return $settings;
@@ -120,11 +120,55 @@ function hvp_get_core_assets($context) {
     }
     // Add core JavaScript.
     foreach (\H5PCore::$scripts as $script) {
-        $settings['core']['scripts'][] = $relpath . $script . $cachebuster;
-        $PAGE->requires->js(new moodle_url($liburl . $script . $cachebuster), true);
+        $scriptpath = $relpath . $script;
+        $settings['core']['scripts'][] = generate_js_url($scriptpath)->out(false);
+        $PAGE->requires->js($scriptpath, true);
     }
 
     return $settings;
+}
+
+/**
+ * Determine the correct JS Revision to use for this load.
+ * Copied from outputrequirementslib because that function is protected.
+ *
+ * @return int the jsrev to use.
+ */
+function get_jsrev(): int {
+    global $CFG;
+
+    if (empty($CFG->cachejs)) {
+        $jsrev = -1;
+    } else if (empty($CFG->jsrev)) {
+        $jsrev = 1;
+    } else {
+        $jsrev = $CFG->jsrev;
+    }
+
+    return $jsrev;
+}
+
+/**
+ * Generates a cacheable URL to serve a JS file.
+ * This is used for URLS that will be used inside javascript. For inside Moodle code,
+ * $PAGE->requires->js() will perform the needed conversion.
+ *
+ * @param string $scriptpath
+ * @return moodle_url
+ */
+function generate_js_url(string $scriptpath): moodle_url {
+    global $CFG;
+
+    $jsrev = get_jsrev();
+
+    if (empty($CFG->slasharguments)) {
+        $jsurl = new moodle_url('/lib/javascript.php', array('rev'=>$jsrev, 'jsfile'=>$scriptpath));
+    } else {
+        $jsurl = new moodle_url('/lib/javascript.php');
+        $jsurl->set_slashargument('/' . $jsrev . $scriptpath);
+    }
+
+    return $jsurl;
 }
 
 /**
@@ -173,14 +217,14 @@ function hvp_add_editor_assets($id = null, $mformid = null) {
     foreach (H5peditor::$scripts as $script) {
         // We do not want the creator of the iframe inside the iframe.
         if ($script !== 'scripts/h5peditor-editor.js') {
-            $assets['js'][] = $url . 'editor/' . $script . $cachebuster;
+            $assets['js'][] = generate_js_url($url . 'editor/' . $script)->out();
         }
     }
 
     // Add JavaScript with library framework integration (editor part).
-    $PAGE->requires->js(new moodle_url('/mod/hvp/editor/scripts/h5peditor-editor.js' . $cachebuster), true);
-    $PAGE->requires->js(new moodle_url('/mod/hvp/editor/scripts/h5peditor-init.js' . $cachebuster), true);
-    $PAGE->requires->js(new moodle_url('/mod/hvp/editor.js' . $cachebuster), true);
+    $PAGE->requires->js('/mod/hvp/editor/scripts/h5peditor-editor.js', true);
+    $PAGE->requires->js('/mod/hvp/editor/scripts/h5peditor-init.js', true);
+    $PAGE->requires->js('/mod/hvp/editor.js', true);
 
     // Add translations.
     $language = \mod_hvp\framework::get_language();
@@ -188,7 +232,7 @@ function hvp_add_editor_assets($id = null, $mformid = null) {
     if (!file_exists("{$CFG->dirroot}/mod/hvp/{$languagescript}")) {
         $languagescript = 'editor/language/en.js';
     }
-    $PAGE->requires->js(new moodle_url('/mod/hvp/' . $languagescript . $cachebuster), true);
+    $PAGE->requires->js('/mod/hvp/' . $languagescript, true);
 
     // Add JavaScript settings.
     $root = \mod_hvp\view_assets::getsiteroot();
@@ -247,9 +291,13 @@ function hvp_add_editor_assets($id = null, $mformid = null) {
  * @throws \coding_exception
  */
 function hvp_admin_add_generic_css_and_js($page, $liburl, $settings = null) {
+
+    // TODO: remove this and have it given as a parameter when CSS is fixed.
+    $relpath = '/' . preg_replace('/^[^:]+:\/\/[^\/]+\//', '', $liburl);
+
     // @codingStandardsIgnoreLine
     foreach (\H5PCore::$adminScripts as $script) {
-        $page->requires->js(new moodle_url($liburl . $script . hvp_get_cache_buster()), true);
+        $page->requires->js($relpath . $script, true);
     }
 
     if ($settings === null) {
