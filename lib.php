@@ -243,6 +243,8 @@ function hvp_delete_instance($id) {
  * @return true|false Success
  */
 function hvp_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, $options = array()) {
+    global $CFG;
+
     switch ($filearea) {
         default:
             return false; // Invalid file area.
@@ -343,6 +345,30 @@ function hvp_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload
 
             $itemid = 0;
             break;
+
+        case 'cssfile':
+            if ($context->contextlevel != CONTEXT_SYSTEM) {
+                return false; // Invalid context.
+            }
+
+            $filename = array_pop($args);
+            $filepath = (!$args ? '/' : '/' .implode('/', $args) . '/');
+            $path = $CFG->dirroot . '/mod/hvp' . $filepath . $filename;
+            $cssfile = realpath($path);
+
+            $lifetime = 60 * 60 * 24 * 90;
+
+            header('Etag: "'. get_config('mod_hvp', 'version') .'"');
+            header('Content-Disposition: inline; filename="styles.php"');
+            header('Last-Modified: '. gmdate('D, d M Y H:i:s', filemtime($cssfile)) .' GMT');
+            header('Expires: '. gmdate('D, d M Y H:i:s', time() + $lifetime) .' GMT');
+            header('Pragma: ');
+            header('Cache-Control: public, max-age='.$lifetime.', immutable');
+            header('Accept-Ranges: none');
+            header('Content-Type: text/css; charset=utf-8');
+
+            readfile($cssfile);
+            exit();
     }
 
     $filename = array_pop($args);
@@ -505,4 +531,3 @@ function mod_hvp_core_calendar_provide_event_action(calendar_event $event, actio
             true
     );
 }
-
