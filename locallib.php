@@ -132,8 +132,8 @@ function hvp_get_core_assets($context) {
  * This is a copy of the get_jsrev() function from lib/outputrequirementslib.php.
  * That function is protected in versions older than 3.9.
  *
- * If this plugin is ever changed so that it has version 3.9 as a minimum requirement, then
- * this function can be removed.
+ * If this plugin is ever changed so that it has version 3.9 (or later) as a minimum
+ * requirement, then this function can be removed.
  *
  * @return int the jsrev to use.
  */
@@ -173,17 +173,10 @@ function generate_js_url(string $scriptpath): moodle_url {
  * @return moodle_url
  */
 function generate_css_url(string $cssfile): moodle_url {
-    global $CFG;
-
     $systemcontext = \context_system::instance();
-
-    if (empty($CFG->slasharguments)) {
-        $filespathbase = '/pluginfile.php?file=/' . $systemcontext->id . '/mod_hvp/cssfile/';
-    } else {
-        $filespathbase = '/pluginfile.php/' . $systemcontext->id . '/mod_hvp/cssfile/';
-    }
-
-    return new moodle_url($filespathbase . $cssfile);
+    // This module assumes the use of slash arguments.
+    $filespath = '/pluginfile.php/' . $systemcontext->id . '/mod_hvp/cssfile/' . $cssfile;
+    return new moodle_url($filespath, ['rev' => get_config('mod_hvp', 'version')]);
 }
 
 /**
