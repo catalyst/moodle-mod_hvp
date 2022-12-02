@@ -128,7 +128,12 @@ function hvp_get_core_assets($context) {
 
 /**
  * Determine the correct JS Revision to use for this load.
- * Copied from outputrequirementslib because that function is protected.
+ *
+ * This is a copy of the get_jsrev() function from lib/outputrequirementslib.php.
+ * That function is protected in versions older than 3.9.
+ *
+ * If this plugin is ever changed so that it has version 3.9 as a minimum requirement, then
+ * this function can be removed.
  *
  * @return int the jsrev to use.
  */
@@ -155,17 +160,9 @@ function get_jsrev(): int {
  * @return moodle_url
  */
 function generate_js_url(string $scriptpath): moodle_url {
-    global $CFG;
-
-    $jsrev = get_jsrev();
-
-    if (empty($CFG->slasharguments)) {
-        $jsurl = new moodle_url('/lib/javascript.php', array('rev'=>$jsrev, 'jsfile'=>$scriptpath));
-    } else {
-        $jsurl = new moodle_url('/lib/javascript.php');
-        $jsurl->set_slashargument('/' . $jsrev . $scriptpath);
-    }
-
+    // This module assumes the use of slash arguments.
+    $jsurl = new moodle_url('/lib/javascript.php');
+    $jsurl->set_slashargument('/' . get_jsrev() . $scriptpath);
     return $jsurl;
 }
 
