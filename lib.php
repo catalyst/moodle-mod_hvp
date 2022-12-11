@@ -35,6 +35,8 @@ use core_calendar\local\event\entities\action_interface;
 defined('MOODLE_INTERNAL') || die();
 
 require_once('autoloader.php');
+require_once($CFG->dirroot . '/lib/configonlylib.php');
+require_once($CFG->dirroot . '/lib/csslib.php');
 
  /* Moodle core API */
 
@@ -243,6 +245,8 @@ function hvp_delete_instance($id) {
  * @return true|false Success
  */
 function hvp_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, $options = array()) {
+    global $CFG;
+
     switch ($filearea) {
         default:
             return false; // Invalid file area.
@@ -343,6 +347,19 @@ function hvp_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload
 
             $itemid = 0;
             break;
+
+        case 'cssfile':
+            if ($context->contextlevel != CONTEXT_SYSTEM) {
+                return false; // Invalid context.
+            }
+
+            $filename = array_pop($args);
+            $filepath = (!$args ? '/' : '/' .implode('/', $args) . '/');
+            $path = $CFG->dirroot . '/mod/hvp' . $filepath . $filename;
+            $cssfile = realpath($path);
+
+            css_send_cached_css($cssfile, get_config('mod_hvp', 'version'));
+            exit();
     }
 
     $filename = array_pop($args);
@@ -505,4 +522,3 @@ function mod_hvp_core_calendar_provide_event_action(calendar_event $event, actio
             true
     );
 }
-

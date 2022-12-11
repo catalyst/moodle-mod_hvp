@@ -115,9 +115,10 @@ $settings['libraryList']['listHeaders'] = array(
 
 // Add js.
 $liburl = \mod_hvp\view_assets::getsiteroot() . '/mod/hvp/library/';
+$relpath = '/' . preg_replace('/^[^:]+:\/\/[^\/]+\//', '', $liburl);
 
-hvp_admin_add_generic_css_and_js($PAGE, $liburl, $settings);
-$PAGE->requires->js(new moodle_url($liburl . 'js/h5p-library-list.js' . hvp_get_cache_buster()), true);
+hvp_admin_add_generic_css_and_js($PAGE, $relpath, $settings);
+$PAGE->requires->js($relpath . 'js/h5p-library-list.js', true);
 
 // RENDER PAGE OUTPUT.
 

@@ -316,7 +316,7 @@ class view_assets {
         $PAGE->requires->data_for_js('H5PIntegration', $this->settings, true);
 
         // Add xAPI collector script.
-        $PAGE->requires->js(new \moodle_url(self::getsiteroot() . '/mod/hvp/xapi-collector.js'), true);
+        $PAGE->requires->js('/mod/hvp/xapi-collector.js', true);
     }
 
     /**

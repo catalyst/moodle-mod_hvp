@@ -81,8 +81,8 @@ function hvp_get_core_settings($context) {
         'crossoriginRegex' => isset($CFG->mod_hvp_crossoriginRegex) ? $CFG->mod_hvp_crossoriginRegex : null,
         'crossoriginCacheBuster' => isset($CFG->mod_hvp_crossoriginCacheBuster) ? $CFG->mod_hvp_crossoriginCacheBuster : null,
         'libraryConfig' => $core->h5pF->getLibraryConfig(),
-        'pluginCacheBuster' => hvp_get_cache_buster(),
-        'libraryUrl' => $basepath . 'mod/hvp/library/js'
+        'pluginCacheBuster' => '',
+        'libraryUrl' => $basepath . '/lib/javascript.php/' . get_jsrev() . '/library/js'
     );
 
     return $settings;
@@ -106,25 +106,77 @@ function hvp_get_core_assets($context) {
     $settings['loadedJs'] = array();
     $settings['loadedCss'] = array();
 
-    // Make sure files are reloaded for each plugin update.
-    $cachebuster = \hvp_get_cache_buster();
-
     // Use relative URL to support both http and https.
     $liburl = \mod_hvp\view_assets::getsiteroot() . '/mod/hvp/library/';
     $relpath = '/' . preg_replace('/^[^:]+:\/\/[^\/]+\//', '', $liburl);
 
     // Add core stylesheets.
     foreach (\H5PCore::$styles as $style) {
-        $settings['core']['styles'][] = $relpath . $style . $cachebuster;
-        $PAGE->requires->css(new moodle_url($liburl . $style . $cachebuster));
+        $url = generate_css_url('library/' . $style);
+        $settings['core']['styles'][] = $url->out(false);
+        $PAGE->requires->css($url);
     }
     // Add core JavaScript.
     foreach (\H5PCore::$scripts as $script) {
-        $settings['core']['scripts'][] = $relpath . $script . $cachebuster;
-        $PAGE->requires->js(new moodle_url($liburl . $script . $cachebuster), true);
+        $scriptpath = $relpath . $script;
+        $settings['core']['scripts'][] = generate_js_url($scriptpath)->out(false);
+        $PAGE->requires->js($scriptpath, true);
     }
 
     return $settings;
+}
+
+/**
+ * Determine the correct JS Revision to use for this load.
+ *
+ * This is a copy of the get_jsrev() function from lib/outputrequirementslib.php.
+ * That function is protected in versions older than 3.9.
+ *
+ * If this plugin is ever changed so that it has version 3.9 (or later) as a minimum
+ * requirement, then this function can be removed.
+ *
+ * @return int the jsrev to use.
+ */
+function get_jsrev(): int {
+    global $CFG;
+
+    if (empty($CFG->cachejs)) {
+        $jsrev = -1;
+    } else if (empty($CFG->jsrev)) {
+        $jsrev = 1;
+    } else {
+        $jsrev = $CFG->jsrev;
+    }
+
+    return $jsrev;
+}
+
+/**
+ * Generates a cacheable URL to serve a JS file.
+ * This is used for URLS that will be used inside javascript. For inside Moodle code,
+ * $PAGE->requires->js() will perform the needed conversion.
+ *
+ * @param string $scriptpath
+ * @return moodle_url
+ */
+function generate_js_url(string $scriptpath): moodle_url {
+    // This module assumes the use of slash arguments.
+    $jsurl = new moodle_url('/lib/javascript.php');
+    $jsurl->set_slashargument('/' . get_jsrev() . $scriptpath);
+    return $jsurl;
+}
+
+/**
+ * Generates a cacheable URL to serve a CSS file.
+ *
+ * @param string $cssfile
+ * @return moodle_url
+ */
+function generate_css_url(string $cssfile): moodle_url {
+    $systemcontext = \context_system::instance();
+    // This module assumes the use of slash arguments.
+    $filespath = '/pluginfile.php/' . $systemcontext->id . '/mod_hvp/cssfile/' . $cssfile;
+    return new moodle_url($filespath, ['rev' => get_config('mod_hvp', 'version')]);
 }
 
 /**
@@ -161,26 +213,23 @@ function hvp_add_editor_assets($id = null, $mformid = null) {
     $url = \mod_hvp\view_assets::getsiteroot() . '/mod/hvp/';
     $url = '/' . preg_replace('/^[^:]+:\/\/[^\/]+\//', '', $url);
 
-    // Make sure files are reloaded for each plugin update.
-    $cachebuster = \hvp_get_cache_buster();
-
     // Add editor styles.
     foreach (H5peditor::$styles as $style) {
-        $assets['css'][] = $url . 'editor/' . $style . $cachebuster;
+        $assets['css'][] = generate_css_url('editor/' . $style)->out();
     }
 
     // Add editor JavaScript.
     foreach (H5peditor::$scripts as $script) {
         // We do not want the creator of the iframe inside the iframe.
         if ($script !== 'scripts/h5peditor-editor.js') {
-            $assets['js'][] = $url . 'editor/' . $script . $cachebuster;
+            $assets['js'][] = generate_js_url($url . 'editor/' . $script)->out();
         }
     }
 
     // Add JavaScript with library framework integration (editor part).
-    $PAGE->requires->js(new moodle_url('/mod/hvp/editor/scripts/h5peditor-editor.js' . $cachebuster), true);
-    $PAGE->requires->js(new moodle_url('/mod/hvp/editor/scripts/h5peditor-init.js' . $cachebuster), true);
-    $PAGE->requires->js(new moodle_url('/mod/hvp/editor.js' . $cachebuster), true);
+    $PAGE->requires->js('/mod/hvp/editor/scripts/h5peditor-editor.js', true);
+    $PAGE->requires->js('/mod/hvp/editor/scripts/h5peditor-init.js', true);
+    $PAGE->requires->js('/mod/hvp/editor.js', true);
 
     // Add translations.
     $language = \mod_hvp\framework::get_language();
@@ -188,7 +237,7 @@ function hvp_add_editor_assets($id = null, $mformid = null) {
     if (!file_exists("{$CFG->dirroot}/mod/hvp/{$languagescript}")) {
         $languagescript = 'editor/language/en.js';
     }
-    $PAGE->requires->js(new moodle_url('/mod/hvp/' . $languagescript . $cachebuster), true);
+    $PAGE->requires->js('/mod/hvp/' . $languagescript, true);
 
     // Add JavaScript settings.
     $root = \mod_hvp\view_assets::getsiteroot();
@@ -242,14 +291,14 @@ function hvp_add_editor_assets($id = null, $mformid = null) {
  * Add core JS and CSS to page.
  *
  * @param moodle_page $page
- * @param moodle_url|string $liburl
+ * @param string $relpath
  * @param array|null $settings
  * @throws \coding_exception
  */
-function hvp_admin_add_generic_css_and_js($page, $liburl, $settings = null) {
+function hvp_admin_add_generic_css_and_js($page, $relpath, $settings = null) {
     // @codingStandardsIgnoreLine
     foreach (\H5PCore::$adminScripts as $script) {
-        $page->requires->js(new moodle_url($liburl . $script . hvp_get_cache_buster()), true);
+        $page->requires->js($relpath . $script, true);
     }
 
     if ($settings === null) {
@@ -265,22 +314,11 @@ function hvp_admin_add_generic_css_and_js($page, $liburl, $settings = null) {
     );
 
     $page->requires->data_for_js('H5PAdminIntegration', $settings, true);
-    $page->requires->css(new moodle_url($liburl . 'styles/h5p.css' . hvp_get_cache_buster()));
-    $page->requires->css(new moodle_url($liburl . 'styles/h5p-admin.css' . hvp_get_cache_buster()));
+    $page->requires->css(generate_css_url($relpath . 'styles/h5p.css'));
+    $page->requires->css(generate_css_url($relpath . 'styles/h5p-admin.css'));
 
     // Add settings.
     $page->requires->data_for_js('h5p', hvp_get_core_settings(\context_system::instance()), true);
-}
-
-/**
- * Get a query string with the plugin version number to include at the end
- * of URLs. This is used to force the browser to reload the asset when the
- * plugin is updated.
- *
- * @return string
- */
-function hvp_get_cache_buster() {
-    return '?ver=' . get_config('mod_hvp', 'version');
 }
 
 /**
