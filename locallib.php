@@ -106,10 +106,6 @@ function hvp_get_core_assets($context) {
     $settings['loadedJs'] = array();
     $settings['loadedCss'] = array();
 
-    // Use relative URL to support both http and https.
-    $liburl = \mod_hvp\view_assets::getsiteroot() . '/mod/hvp/library/';
-    $relpath = '/' . preg_replace('/^[^:]+:\/\/[^\/]+\//', '', $liburl);
-
     // Add core stylesheets.
     foreach (\H5PCore::$styles as $style) {
         $url = generate_css_url('library/' . $style);
@@ -118,7 +114,7 @@ function hvp_get_core_assets($context) {
     }
     // Add core JavaScript.
     foreach (\H5PCore::$scripts as $script) {
-        $scriptpath = $relpath . $script;
+        $scriptpath = '/mod/hvp/library/' . $script;
         $settings['core']['scripts'][] = generate_js_url($scriptpath)->out(false);
         $PAGE->requires->js($scriptpath, true);
     }
@@ -291,14 +287,13 @@ function hvp_add_editor_assets($id = null, $mformid = null) {
  * Add core JS and CSS to page.
  *
  * @param moodle_page $page
- * @param string $relpath
  * @param array|null $settings
  * @throws \coding_exception
  */
-function hvp_admin_add_generic_css_and_js($page, $relpath, $settings = null) {
+function hvp_admin_add_generic_css_and_js($page, $settings = null) {
     // @codingStandardsIgnoreLine
     foreach (\H5PCore::$adminScripts as $script) {
-        $page->requires->js($relpath . $script, true);
+        $page->requires->js('/mod/hvp/library/' . $script, true);
     }
 
     if ($settings === null) {
@@ -314,8 +309,8 @@ function hvp_admin_add_generic_css_and_js($page, $relpath, $settings = null) {
     );
 
     $page->requires->data_for_js('H5PAdminIntegration', $settings, true);
-    $page->requires->css(generate_css_url($relpath . 'styles/h5p.css'));
-    $page->requires->css(generate_css_url($relpath . 'styles/h5p-admin.css'));
+    $page->requires->css(generate_css_url('/mod/hvp/library/styles/h5p.css'));
+    $page->requires->css(generate_css_url('/mod/hvp/library/styles/h5p-admin.css'));
 
     // Add settings.
     $page->requires->data_for_js('h5p', hvp_get_core_settings(\context_system::instance()), true);

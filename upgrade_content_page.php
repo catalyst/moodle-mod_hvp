@@ -94,11 +94,9 @@ if (count($versions) < 2) {
     );
 
     // Add JavaScripts.
-    $liburl = \mod_hvp\view_assets::getsiteroot() . '/mod/hvp/library/';
-    $relpath = '/' . preg_replace('/^[^:]+:\/\/[^\/]+\//', '', $liburl);
-    hvp_admin_add_generic_css_and_js($PAGE, $relpath, $settings);
-    $PAGE->requires->js($relpath . 'js/h5p-version.js', true);
-    $PAGE->requires->js($relpath . 'js/h5p-content-upgrade.js', true);
+    hvp_admin_add_generic_css_and_js($PAGE, $settings);
+    $PAGE->requires->js('/mod/hvp/library/js/h5p-version.js', true);
+    $PAGE->requires->js('/mod/hvp/library/js/h5p-content-upgrade.js', true);
     echo $OUTPUT->header();
     echo '<div id="h5p-admin-container">' . get_string('enablejavascript', 'hvp') . '</div>';
 }
