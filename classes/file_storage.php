@@ -59,7 +59,7 @@ class file_storage implements \H5PFileStorage {
             'component' => 'mod_hvp',
             'filearea' => 'libraries',
             'itemid' => 0,
-            'filepath' => '/' . \H5PCore::libraryToString($library, true) . '/',
+            'filepath' => '/' . \H5PCore::libraryToFolderName($library) . '/',
         );
 
         // Remove any old existing library files.
@@ -152,7 +152,7 @@ class file_storage implements \H5PFileStorage {
      */
     // @codingStandardsIgnoreLine
     public function exportLibrary($library, $target) {
-        $folder = \H5PCore::libraryToString($library, true);
+        $folder = \H5PCore::libraryToFolderName($library);
         $context = \context_system::instance();
         self::exportFileTree("{$target}/{$folder}", $context->id, 'libraries', "/{$folder}/");
     }
@@ -980,5 +980,10 @@ class file_storage implements \H5PFileStorage {
 
         // Store in local storage folder.
         return file_put_contents($filepath, $stream);
+    }
+
+    // @codingStandardIgnoreLine
+    public function deleteLibrary($library) {
+        // TODO: Implement deleteLibrary() method.
     }
 }
