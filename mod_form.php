@@ -467,6 +467,11 @@ class mod_hvp_mod_form extends moodleform_mod {
             $suffix = $this->get_suffix();
         }
 
+        // Moodle 4.0 introduces its own pass grade completion rule, so we'll remove it as we have our own.
+        // We can switch to the core version if we no longer need to support < 4.0.
+        if ($mform->elementExists('completionpassgrade')) {
+            $mform->removeElement('completionpassgrade');
+        }
         $items   = array();
         $group   = array();
         $group[] = $mform->createElement('advcheckbox', 'completionpass' . $suffix, null, get_string('completionpass', 'hvp'),
