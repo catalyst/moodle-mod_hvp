@@ -99,6 +99,10 @@ $string['contentstatefrequency_help'] = 'In seconds, how often do you wish the u
 $string['enabledlrscontenttypes'] = 'Enable LRS dependent content types';
 $string['enabledlrscontenttypes_help'] = 'Makes it possible to use content types that rely upon a Learning Record Store to function properly, like the Questionnaire content type.';
 
+$string['proxying_settings_header'] = 'Proxy settings';
+$string['enable_pluginfile_proxy'] = 'Enable pluginfile proxy';
+$string['enable_pluginfile_proxy_help'] = 'Pass requests for h5p files through proxy_pluginfile.php, which has the ability to modify the request.';
+
 // Admin menu.
 $string['contenttypecacheheader'] = 'Content Type Cache';
 $string['settings'] = 'H5P Settings';

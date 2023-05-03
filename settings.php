@@ -140,6 +140,13 @@ if ($ADMIN->fulltree) {
         $hubinfo
     ));
 
+    // Proxying.
+    $settings->add(new admin_setting_heading('mod_hvp/proxying_settings', get_string('proxying_settings_header', 'hvp'), ''));
+    $settings->add(
+        new admin_setting_configcheckbox('mod_hvp/enable_pluginfile_proxy',
+                get_string('enable_pluginfile_proxy', 'hvp'),
+                get_string('enable_pluginfile_proxy_help', 'hvp'), 1));
+
     // Load js for disable hub confirmation dialog functionality.
     $PAGE->requires->js('/mod/hvp/library/js/jquery.js', true);
     $PAGE->requires->js('/mod/hvp/library/js/h5p-event-dispatcher.js', true);
