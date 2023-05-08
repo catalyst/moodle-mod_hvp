@@ -353,12 +353,16 @@ function hvp_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload
                 return false; // Invalid context.
             }
 
-            $filename = array_pop($args);
-            $filepath = (!$args ? '/' : '/' .implode('/', $args) . '/');
-            $path = $CFG->dirroot . '/mod/hvp' . $filepath . $filename;
-            $cssfile = realpath($path);
+            $relativefilepath = '/' . implode('/', $args);
 
-            css_send_cached_css($cssfile, get_config('mod_hvp', 'version'));
+            // Ensure the path begins with /mod/hvp.
+            if (!str_contains($relativefilepath, '/mod/hvp')) {
+                $relativefilepath = '/mod/hvp' . $relativefilepath;
+            }
+
+            $absolutefilepath = realpath($CFG->dirroot . $relativefilepath);
+
+            css_send_cached_css($absolutefilepath, get_config('mod_hvp', 'version'));
             exit();
     }
 
