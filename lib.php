@@ -356,7 +356,7 @@ function hvp_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload
             $relativefilepath = '/' . implode('/', $args);
 
             // Ensure the path begins with /mod/hvp.
-            if (!str_contains($relativefilepath, '/mod/hvp')) {
+            if (strpos($relativefilepath, '/mod/hvp') === false) {
                 $relativefilepath = '/mod/hvp' . $relativefilepath;
             }
 
