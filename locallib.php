@@ -82,7 +82,7 @@ function hvp_get_core_settings($context) {
         'crossoriginCacheBuster' => isset($CFG->mod_hvp_crossoriginCacheBuster) ? $CFG->mod_hvp_crossoriginCacheBuster : null,
         'libraryConfig' => $core->h5pF->getLibraryConfig(),
         'pluginCacheBuster' => '',
-        'libraryUrl' => $basepath . '/lib/javascript.php/' . get_jsrev() . '/library/js'
+        'libraryUrl' => $basepath . '/lib/javascript.php/' . get_jsrev() . '/mod/hvp/library/js'
     );
 
     return $settings;
