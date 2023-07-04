@@ -45,7 +45,7 @@ class helper_test extends \advanced_testcase {
      * Tear down after every test.
      */
     protected function tearDown(): void {
-        unset($this->generator);
+        $this->generator = null;
     }
 
     public function test_get_library_empty_options() {
