@@ -41,6 +41,13 @@ class helper_test extends \advanced_testcase {
         $this->generator = $this->getDataGenerator()->get_plugin_generator('mod_hvp');
     }
 
+    /**
+     * Tear down after every test.
+     */
+    protected function tearDown(): void {
+        unset($this->generator);
+    }
+
     public function test_get_library_empty_options() {
         $this->expectException(\moodle_exception::class);
         $this->expectExceptionMessage('No existing libraries were found matching id or title provided.');
