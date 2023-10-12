@@ -84,6 +84,9 @@ class mobile {
             'user_id' => $USER->id,
             'secret'  => urlencode($secret)
         ];
+        $viewassets = new mod_hvp\view_assets($cm, $course);
+        $assets = $viewassets->get_assets_for_mobile_view();
+        $data = array_merge($data, $assets);
 
         return array(
             'templates'  => array(

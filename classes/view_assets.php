@@ -320,6 +320,40 @@ class view_assets {
     }
 
     /**
+     * Create a single file containing all required assets.
+     *
+     * @return array
+     */
+    public function get_assets_for_mobile_view(): array {
+        global $CFG;
+
+        $assets = [];
+        $jsfiles = [];
+        $cssfiles = [];
+
+        // We may be able to use jsrequires directly, but we can't trust its data structure.
+        foreach ($this->jsrequires as $script) {
+            $jsfiles[] = $script;
+        }
+        // Add xAPI collector script.
+        $jsfiles[] = $CFG->dirroot . '/mod/hvp/xapi-collector.js';
+        // Add resizer for mobile.
+        $jsfiles[] = $CFG->dirroot . '/mod/hvp/library/js/h5p-resizer.js';
+
+        $assets['js'] = \core_minify::js_files($jsfiles);
+
+        foreach ($this->cssrequires as $css) {
+            $cssfiles[] = $css;
+        }
+
+        $assets['css'] = \core_minify::css_files($cssfiles);
+
+        // Print JavaScript settings to page. TODO What does data_for_js do?
+//        $PAGE->requires->data_for_js('H5PIntegration', $this->settings, true);
+        return $assets;
+    }
+
+    /**
      * Outputs h5p view
      */
     public function outputview() {
