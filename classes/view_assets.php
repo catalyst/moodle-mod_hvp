@@ -41,7 +41,7 @@ class view_assets {
     private $jsrequires;
     private $cssrequires;
 
-    protected $settings;
+    public $settings;
     protected $embedtype;
     protected $files;
 

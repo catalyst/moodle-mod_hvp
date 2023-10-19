@@ -19,7 +19,10 @@ namespace mod_hvp\output;
 defined('MOODLE_INTERNAL') || die();
 
 use context_module;
+use js_writer;
 use mod_hvp;
+
+require_once($CFG->dirroot . '/mod/hvp/locallib.php');
 
 class mobile {
 
@@ -78,12 +81,35 @@ class mobile {
             ));
         }
 
+        $h5pscripts = [[
+            'script' => $CFG->wwwroot . '/mod/hvp/test.js', // Test hello world script
+        ], [
+                'script' => $CFG->wwwroot . '/mod/hvp/library/js/h5p-resizer.js'
+            ]];
+        foreach (\H5PCore::$scripts as $script) {
+            $h5pscripts[] = [
+                'script' => $CFG->wwwroot . '/mod/hvp/library/' . $script
+            ];
+        }
+
+        $h5pscripts[] = [
+            'script' => 'https://mdl41-defence-app.localhost/pluginfile.php/1/mod_hvp/cachedassets/95582106e3bab9530eb713db3f5835d06caf6e36.js'
+        ];
+
         $data = [
             'cmid'    => $cmid,
             'wwwroot' => $CFG->wwwroot,
             'user_id' => $USER->id,
-            'secret'  => urlencode($secret)
+            'secret'  => urlencode($secret),
+            'h5pscripts' => $h5pscripts
         ];
+
+
+        $view = new \mod_hvp\view_assets($cm, $course);
+        $js = js_writer::set_variable('H5PIntegration', $view->settings);
+
+
+        $js .= file_get_contents($CFG->dirroot . '/mod/hvp/inject.js');
 
         return array(
             'templates'  => array(
@@ -92,7 +118,14 @@ class mobile {
                     'html' => $OUTPUT->render_from_template('mod_hvp/mobile_view_page', $data),
                 ),
             ),
-            'javascript' => file_get_contents($CFG->dirroot . '/mod/hvp/library/js/h5p-resizer.js'),
+            'javascript' => $js, //  file_get_contents($CFG->dirroot . '/mod/hvp/library/js/h5p-resizer.js'),
         );
+    }
+
+    public static function test_init() {
+        return [
+            'templates' => [],
+            'javscript' => "window.console.log('it works')"
+        ];
     }
 }

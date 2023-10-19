@@ -119,10 +119,10 @@ function hvp_get_core_assets($context) {
         $PAGE->requires->css(new moodle_url($liburl . $style . $cachebuster));
     }
     // Add core JavaScript.
-    foreach (\H5PCore::$scripts as $script) {
-        $settings['core']['scripts'][] = $relpath . $script . $cachebuster;
-        $PAGE->requires->js(new moodle_url($liburl . $script . $cachebuster), true);
-    }
+    // foreach (\H5PCore::$scripts as $script) {
+    //     $settings['core']['scripts'][] = $relpath . $script . $cachebuster;
+    //     $PAGE->requires->js(new moodle_url($liburl . $script . $cachebuster), true);
+    // }
 
     return $settings;
 }
