@@ -71,7 +71,7 @@ try {
 $context = context_module::instance($cm->id);
 require_capability('mod/hvp:view', $context);
 
-// Set up view assets.
+
 $view = new \mod_hvp\view_assets($cm, $course, [
     'disabledownload'   => $disabledownload,
     'disablefullscreen' => $disablefullscreen
@@ -90,19 +90,28 @@ $PAGE->set_heading($course->fullname);
 // Embed specific page setup.
 $PAGE->add_body_class('h5p-embed');
 $PAGE->set_pagelayout('embedded');
+
+// HACK HACK HACK
+// echo $OUTPUT->header();
+// echo $OUTPUT->footer();
+// return;
+
 $root = \mod_hvp\view_assets::getsiteroot();
-$PAGE->requires->js_call_amd('mod_hvp/embed');
+// $PAGE->requires->js_call_amd('mod_hvp/embed');
+
 // Add H5P assets to page.
-$view->addassetstopage();
+// $view->addassetstopage();
 $view->logviewed();
 
 // Print page HTML.
 echo $OUTPUT->header();
 echo '<div class="clearer"></div>';
 
+// echo '<script src="https://mdl41-defence-app.localhost/mod/hvp/testfile.js" core-external-content></script>';
+
 // Print any messages.
 \mod_hvp\framework::printMessages('info', \mod_hvp\framework::messages('info'));
 \mod_hvp\framework::printMessages('error', \mod_hvp\framework::messages('error'));
 
-$view->outputview();
+// $view->outputview();
 echo $OUTPUT->footer();

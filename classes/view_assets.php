@@ -28,6 +28,8 @@ use moodle_url;
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once(__DIR__ . "/../locallib.php");
+
 /**
  * Handles finding and attaching assets for view
  * @package mod_hvp
@@ -203,10 +205,10 @@ class view_assets {
         $preloadeddeps = $this->core->loadContentDependencies($this->content['id'], 'preloaded');
         $files         = $this->core->getDependenciesFiles($preloadeddeps);
 
-        // Add additional asset files if required.
-        $hvpoutput = $PAGE->get_renderer('mod_hvp');
-        $hvpoutput->hvp_alter_scripts($files['scripts'], $preloadeddeps, $this->embedtype);
-        $hvpoutput->hvp_alter_styles($files['styles'], $preloadeddeps, $this->embedtype);
+        // // Add additional asset files if required.
+        // $hvpoutput = $PAGE->get_renderer('mod_hvp');
+        // $hvpoutput->hvp_alter_scripts($files['scripts'], $preloadeddeps, $this->embedtype);
+        // $hvpoutput->hvp_alter_styles($files['styles'], $preloadeddeps, $this->embedtype);
 
         return $files;
     }
@@ -340,7 +342,7 @@ class view_assets {
         // Add resizer for mobile.
         $jsfiles[] = $CFG->dirroot . '/mod/hvp/library/js/h5p-resizer.js';
 
-        $assets['js'] = \core_minify::js_files($jsfiles);
+        $assets['js'] = $jsfiles; // \core_minify::js_files($jsfiles);
 
         foreach ($this->cssrequires as $css) {
             $cssfiles[] = $css;

@@ -19,6 +19,8 @@ namespace mod_hvp\output;
 defined('MOODLE_INTERNAL') || die();
 
 use context_module;
+use context_system;
+use external_util;
 use mod_hvp;
 
 class mobile {
@@ -82,11 +84,28 @@ class mobile {
             'cmid'    => $cmid,
             'wwwroot' => $CFG->wwwroot,
             'user_id' => $USER->id,
-            'secret'  => urlencode($secret)
+            'secret'  => urlencode($secret),
+            'assetlink' => 'https://mdl41-defence-app.localhost/mod/hvp/testfile.js'
         ];
         $viewassets = new mod_hvp\view_assets($cm, $course);
         $assets = $viewassets->get_assets_for_mobile_view();
         $data = array_merge($data, $assets);
+
+        //$fs = get_file_storage();
+        //$files = $fs->get_area_files(context_system::instance()->id, 'mod_hvp', 'libraries');
+        // $files = external_util::get_area_files(context_system::instance()->id, 'mod_hvp', 'libraries');
+
+        $jscontents = '';
+       
+        // file_get_contents($CFG->dirroot . '/mod/hvp/testfile.js');
+        // foreach (\H5PCore::$scripts as $script) {
+        //     $scriptpath = $CFG->dirroot . '/mod/hvp/library/' . $script;
+        //     $jscontents .= file_get_contents($scriptpath);
+
+        //     break; // Testing just to get the first one.
+        // }
+
+        // debugging($jscontents);
 
         return array(
             'templates'  => array(
@@ -95,7 +114,10 @@ class mobile {
                     'html' => $OUTPUT->render_from_template('mod_hvp/mobile_view_page', $data),
                 ),
             ),
-            'javascript' => file_get_contents($CFG->dirroot . '/mod/hvp/library/js/h5p-resizer.js'),
+            // 'javascript' => $jscontents,
+            //`document.getElementById("test1234").innerHTML = '<script src="https://mdl41-defence-app.localhost/mod/hvp/testfile.js" core-external-content></script>'`,
+            //'javascript' => "window.console.log('')", // file_get_contents($CFG->dirroot . '/mod/hvp/library/js/h5p-resizer.js'),
+            // 'files' => [current($files)],
         );
     }
 }
