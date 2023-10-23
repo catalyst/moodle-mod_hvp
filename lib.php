@@ -251,7 +251,15 @@ function hvp_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload
 
     switch ($filearea) {
         default:
-            return false; // Invalid file area.
+         return false; // Invalid file area.
+
+        case 'mobile_fonts':
+            if ($context->contextlevel != CONTEXT_SYSTEM) {
+                return false;
+            }
+
+            $itemid = 0;
+            break;
 
         case 'libraries':
             if ($context->contextlevel != CONTEXT_SYSTEM) {

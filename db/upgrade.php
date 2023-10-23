@@ -626,6 +626,23 @@ function hvp_upgrade_2023122501() {
     }
 }
 
+/**
+ * Adds mobile render method field
+ */
+function hvp_upgrade_2023122502() {
+    global $DB;
+    $dbman = $DB->get_manager();
+
+    // Define field id to be added to hvp.
+    $table = new xmldb_table('hvp');
+    $field = new xmldb_field('mobilerendermethod', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0', 'a11y_title');
+
+    // Conditionally launch add field id.
+    if (!$dbman->field_exists($table, $field)) {
+        $dbman->add_field($table, $field);
+    }
+}
+
 
 /**
  * Hvp module upgrade function.
@@ -655,6 +672,7 @@ function xmldb_hvp_upgrade($oldversion) {
         2020112600,
         2022012001,
         2023122501,
+        2023122502,
     ];
 
     foreach ($upgrades as $version) {

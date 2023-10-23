@@ -1147,6 +1147,7 @@ class framework implements \H5PFrameworkInterface {
             'filtered' => '',
             'disable' => $content['disable'],
             'timemodified' => time(),
+            'mobilerendermethod' => $content['mobilerendermethod'],
         ));
 
         if (isset($content[ 'completionpass'])) {

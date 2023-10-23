@@ -1,0 +1,855 @@
+/**
+ * Waits for an element satisfying selector to exist, then resolves promise with the element.
+ * Useful for resolving race conditions.
+ * MIT Licensed
+ * Author: jwilson8767
+ * @param selector
+ * @returns {Promise}
+ */
+var elementReady = (selector) => {
+  return new Promise((resolve, reject) => {
+    const el = document.querySelector(selector);
+    if (el) {resolve(el);}
+    new MutationObserver((mutationRecords, observer) => {
+      // Query for elements matching the specified selector
+      Array.from(document.querySelectorAll(selector)).forEach((element) => {
+        resolve(element);
+        //Once we have resolved we don't need the observer anymore.
+        observer.disconnect();
+      });
+    })
+      .observe(document.documentElement, {
+        childList: true,
+        subtree: true
+      });
+  });
+};
+
+/**
+ * Creates an interval that attaches to an iframe.
+ * Because intervals are set on the window which is global to the entire app,
+ * we want to clear this as soon as the iframe goes away to avoid breaking the app if something fails.
+ * Note we CANNOT rely on the href, since through testing it appears it is not 1:1 with the actual displayed page.
+ * @param {HTMLElement} iframe to attach to
+ * @param {() => void} function to call on interval
+ * @param {Number} delay
+ */
+function setHVPInterval(iframe, fn, delay) {
+    var interval = setInterval(() => {
+        if (!iframe.isConnected) {
+            window.HVP_LOGGER.log("iframe isConnected changed to false indicating page unload, cancelling interval");
+            clearInterval(interval);
+            return;
+        };
+
+        fn();
+    }, delay);
+    return interval;
+}
+
+// Completion sync handler needs to access the app js, so store a reference to it.
+const appCtx = this;
+
+elementReady('#hvp-mobile-iframe').then(async iframe => {
+    var logger = new HvpLogger(iframe, window.HVPID);
+    logger.start();
+    window.HVP_LOGGER = logger;
+
+    window.HVP_LOGGER.log("setting up iframe");
+
+    var head = iframe.contentWindow.document.head;
+    var body = iframe.contentWindow.document.body;
+
+    // Add the element to hook into.
+    var hookelement = document.createElement('div');
+    hookelement.classList.add('h5p-content');
+    hookelement.setAttribute('data-content-id', window.HVPID); // This var is set by moodle.
+    body.appendChild(hookelement);
+
+    // Inject script which contains all the cached hvp code.
+    var script = document.createElement('script');
+
+    // Add small debug log + the entire HVP js to this iframe.
+    script.textContent = "window.console.log('mod_hvp mobile: iframe loaded (this log is from inside iframe)');";
+    script.textContent += window.HVPJS; // This var is set in Moodle.
+    head.appendChild(script);
+
+    window.HVP_LOGGER.log("Done injecting iframe with h5p contents. JS size: " + window.HVPJS?.length);
+    window.HVP_LOGGER.log("Script tag injected: ");
+    window.HVP_LOGGER.log(script);
+
+    // Inject stylesheet.
+    var stylesheet = document.createElement('style');
+    stylesheet.textContent = window.HVPVIEWCSS;
+    head.appendChild(stylesheet);
+
+    window.HVP_LOGGER.log("Done injecting CSS. CSS length: " + window.HVPVIEWCSS?.length);
+    window.HVP_LOGGER.log("Style tag injected:");
+    window.HVP_LOGGER.log(stylesheet);
+
+    var cachedAssetManager = new HvpCachedAssetManager(iframe, head, body);
+    cachedAssetManager.start();
+
+    var completionManager = new HvpCompletionSyncHandler(iframe);
+    completionManager.start();
+
+    // Put onto window for easy debugging.
+    window.HVP_CACHED_ASSET_MANAGER = cachedAssetManager;
+    window.HVP_COMPLETION_MANAGER = completionManager;
+});
+
+/**
+ * Logger for mod_hvp
+ * Has the ability to drain logs to a webservice so they can be collected on the server side for easy access.
+ */
+class HvpLogger {
+    /**
+     * Iframe used to attach an interval to, nothing is actually accessed here
+     * @type {HTMLElement}
+     */
+    iframe;
+
+    /**
+     * Context id to add to logs
+     * @type {Number
+     */
+    contextId;
+
+    /**
+     * Site, used to access webservices
+     * @type {Object}
+     */
+    site;
+
+    /**
+     * Logs queue for submitting to the server
+     * @type {Array
+     */
+    queue = [];
+
+    /**
+     * Create logger
+     * @param {HTMLElement} Iframe to attach interval to
+     * @param {Number} Context id to add to logs
+     */
+    constructor(iframe, contextId) {
+        this.iframe = iframe;
+        this.site = appCtx.CoreSitesProvider.getCurrentSite();
+        this.contextId = contextId;
+    }
+
+    /**
+     * Starts logger interval to upload logs to site
+     */
+    start = () => {
+        setHVPInterval(this.iframe, () => this.processQueue(), 1000);
+    }
+
+    /**
+     * Logs a message
+     * Will output to console by default, and if enabled will queue for upload to site
+     * @param {any} message string message, or object. ToString() will be called if sent to site drain.
+     */
+    log = (message) => {
+        // If is string, add header
+        // Otherwise just log it out directly (likely an object or json)
+        if (typeof message === 'string') {
+            window.console.log("mod_hvp mobile log: " + message);
+        } else {
+            window.console.log(message);
+        }
+
+        if (window.HVPLOGDRAINENABLED) {
+            this.queue.push({
+                contextId: this.contextId,
+                message: this.convertToString(message),
+                at: Date.now() / 1000.0
+            });
+        }
+    }
+
+    /**
+     * Converts the given object to string for outputting in log.
+     */
+    convertToString = (thing) => {
+        // Already a string, return as-is.
+        if (typeof thing === 'string') {
+            return thing;
+        }
+
+        // If a regular object (i.e. not a html element or something), stringify it.
+        if (Object.prototype.toString.call(thing) === '[object Object]' && !Array.isArray(thing)) {
+            return JSON.stringify(thing);
+        }
+
+        // Default call toString.
+        return thing.toString();
+    }
+
+    /**
+     * Submits the queued logs to the site
+     */
+    processQueue = async () => {
+        if(this.queue.length == 0) {
+            return;
+        }
+
+        window.console.log("sending logs to site");
+
+        try {
+            await this.site.write("mod_hvp_log_drain", { logs: this.queue });
+            this.queue = [];
+        } catch (ex) {
+            window.console.log("error sending logs to site");
+        }
+    }
+}
+
+/**
+ * Cached asset manager.
+ * Handles watching for assets to cache via angular directives, and then replaces elements
+ * in the h5p as needed.
+ */
+class HvpCachedAssetManager {
+    /**
+     * Iframe linked to, that the h5p is playing inside of. 
+     * @type { HTMLElement }
+     */
+    iframe;
+    
+    /**
+     * Body element inside iframe that contains the h5p content.
+     * @type { HTMLElement }
+     */
+    body;
+
+    /**
+     * Head element inside the iframe that contains the h5p stylesheets
+     * @type { HTMLElement }
+     */
+    head;
+
+    /**
+     * A <style> tag that is created to remap fonts to caches sources
+     * Is appended to the head element inside the iframe
+     * @type { HTMLElement }
+     */
+    fontRemapStyle;
+
+    /**
+     * Cached source mappings. Maps from original source -> cached source.
+     * @type { Object }
+     */
+    mappings = {};
+
+    /**
+     * A list of font family names that have been mapped to their cached sources.
+     * @type { Array }
+     */
+    fontsMapped = [];
+
+    /**
+     * Constructs cache manager
+     * @param {HTMLElement} iframe
+     * @param {HTMLElement} head
+     * @param {HTMLElement} body
+     */
+    constructor(iframe, head, body) {
+        this.iframe = iframe;
+        this.head = head;
+        this.body = body;
+    }
+    
+    /**
+     * Starts the cache replacement process
+     * Notes this operates on an interval and will continue until the iframe element goes away
+     */
+    start = () => {
+        window.HVP_LOGGER.log("Starting cache replacement manager interval");
+
+        // Create own style tag for font remappings.
+        // This improves performance as finding and replacing in the entire css
+        // is quite slow on the device.
+        this.fontRemapStyle = document.createElement('style');
+        this.head.appendChild(this.fontRemapStyle);
+
+        // Start interval checks and updates.
+        setHVPInterval(this.iframe, () => this.onInterval(this), 1000);
+    }
+
+    /**
+     * Checks run on an interval to update elements, etc...
+     */
+    onInterval = () => {
+        this.checkAndUpdateNewMappings();
+        this.replaceUncachedSrcs();
+        this.replaceUncachedStyleAttributeUrls();
+        this.checkAndUpdateFontMappings();
+        this.updateLoadingNotification();
+    }
+
+    /**
+     * Returns a list of font names given in php that are not yet mapped
+     * @return {Array}
+     */
+    getUnmappedFontNames = () => {
+        const fontSrcMap = window.HVPFONTMAP || {};
+        return Object.keys(fontSrcMap).filter(fontName => !this.fontsMapped.includes(fontName));
+    }
+
+    /**
+     * Checks for unmapped fonts that are cached, and maps them
+     */
+    checkAndUpdateFontMappings = () => {
+        const fontSrcMap = window.HVPFONTMAP || {};
+        // Find fonts not yet remapped to a cached src.
+        const notMappedFontNames = this.getUnmappedFontNames();
+
+        // Try and replace each one.
+        notMappedFontNames.forEach(fontName => {
+            const originalSrc = fontSrcMap[fontName];
+            const mappedSource = this.mappings[originalSrc];
+
+            // Not mapped yet, ignore.
+            if(!mappedSource) {
+                window.HVP_LOGGER.log("no remapped source for " + fontName + " available yet");
+                return;
+            }
+            
+            // Has a mapped source, replace it.
+            const cssToAdd = `
+                @font-face {
+                    font-family: '${fontName}';
+                    src: url('${mappedSource}');
+                }
+            `;
+
+            // Add css and also mark as mapped so we don't re-add it again later.
+            this.fontRemapStyle.textContent += cssToAdd;
+            this.fontsMapped.push(fontName);
+
+            window.HVP_LOGGER.log("remapped font " + fontName + " to src " + mappedSource);
+        });
+    }
+
+    /**
+     * Calculates if the given elements src or href is mapped yet.
+     * @param {HTMlElement} e element to check
+     * @return {boolean} true if mapped, else false.
+     */
+    isElementSrcOrHrefMapped = (e) => {
+        var val = this.getOriginalSrcOrHref(e);
+
+        if(val == '') {
+            return false;
+        }
+
+        return Object.keys(this.mappings).includes(val);
+    }
+
+    /**
+     * returns true if the given element is ready to be mapped.
+     * I.e. is its src or href cached yet
+     *
+     * @param {HTMlElement} e element to check
+     * @return {boolean} true if ready to be mapped
+     */
+    isElementReadyToMap = (e) => {
+        // Some elements will never cache, so are always ready to be mapped.
+        const srcOrHref = this.getSrcOrHref(e);
+        if(this.isUncacheableUrl(srcOrHref)) {
+            return true;
+        }
+
+        return this.isFinishedCaching(e);
+    }
+
+    /**
+     * Returns true if a url is uncacheable, i.e. the directives will never cache it
+     * @param {string} urlString url in string format
+     * @return {boolean}
+     */
+    isUncacheableUrl = (urlString) => {
+        // Parse using URL, to remove any extra info e.g. query strings
+        const url = new URL(urlString);
+        const uncacheableFileTypes = ['.mp4']; // TODO add any more found ? e.g. webm ?
+        const matches = uncacheableFileTypes.find(ending => url.pathname.endsWith(ending)) != null;
+
+        return matches
+    }
+
+    /**
+     * Returns src or href attribute of element
+     * @param {HTMlElement} e
+     * @return {string} src or href attributes, or '' if has neither
+     */
+    getSrcOrHref = (e) => this.getOneOfProperties(e, ['src', 'href']);
+
+    /**
+     * Returns originalSrc or originalHref attribute of element
+     * @param {HTMLElement} e
+     * @return {string} originalSrc or originalHref attributes, or '' if has neither
+     */
+    getOriginalSrcOrHref = (e) => this.getOneOfProperties(e, ['originalSrc', 'originalHref']);
+
+    /**
+     * Determines if the given cache element (i.e. a <img> or <a> with core-external-content directive) has finished its caching process.
+     * @param {HTMLElement} e <img> or <a> tag used to cache an asset
+     * @return {boolean} if finished caching
+     */
+    isFinishedCaching = (e) => {
+        const original = this.getOriginalSrcOrHref(e);
+        const current = this.getSrcOrHref(e);
+
+        const originalHasTokenPluginfile = original.includes('tokenpluginfile.php');
+        const originalIsEmpty = original == '';
+        const currentHasTokenPluginfile = current.includes('tokenpluginfile.php');
+        const currentIsEmpty = current == '';
+
+        return !originalIsEmpty && !currentIsEmpty && !originalHasTokenPluginfile && !currentHasTokenPluginfile;
+    }
+
+    /**
+     * Utility function to find the first of the given properties that exists on either the element directly or the dataset of the element.
+     * If none exist, it return an empty string.
+     * @param {HTMLElement} e element to check
+     * @param {Array} properties array of property strings to check
+     * @return {string} 
+     */
+    getOneOfProperties = (e, properties) => {
+        // Check directly.
+        var values = properties.map(property => e[property] ?? null);
+
+        // Also check on dataset.
+        var datasetvalues = properties.map(property => e.dataset[property] ?? null);
+        values = values.concat(datasetvalues);
+        
+        values = values.filter(e => e != null);
+        return values.find(v => v != null) ?? '';
+    }
+
+    /**
+     * Find one of the given properties on the elements style, or an empty string if none found.
+     * @param {HTMLElement} e element to check
+     * @param {Array} properties array of style properties to check
+     * @return {string} value, or empty string if none are set
+     */
+    getOneOfStyleProperties = (e, properties) => {
+        const values = properties.map(property => e.style[property] ?? null);
+        return values.find(v => v != null) ?? '';
+    }
+
+    /**
+     * Returns background or background-image style src url for a given element.
+     * @param {HTMLElement} e;
+     * @return {String} url of background image, or empty string if none found or malformed.
+     */
+     getBackgroundOrBackgroundImageStyleSrc = (e) => {
+        const val = this.getOneOfStyleProperties(e, ['background', 'background-image'])
+        const regex = /url\(['"]?(.*?)['"]?\)/gi;
+        const result = val.match(regex);
+
+        if(!result || result.length == 0) {
+            return '';
+        }
+        // Remove the first 5 chars "url("" and last 2 "")" chars.
+        // Easier to do this in js than regex.
+        const url = result[0].slice(5, -2);
+        return url;
+    };
+
+    /*
+     * Returns the mapped source for the given source.
+     * @param {string} src original source
+     * @param {string} mapped source, or empty string if not mapped
+     */
+    getMappedSource = (src) => {
+        // Replace the '/pluginfile.php' with '/webservice/pluginfile.php' since the cached sources
+        // will have /webservice prepended to it.
+        src = src.replace('/pluginfile.php', '/webservice/pluginfile.php');
+        return this.mappings[src] ?? '';
+    }
+
+    /**
+     * Find elements in the linked <body> that have sources that are yet to be replaced with their cached versions
+     * @return {Array} array of HTMLElement which have a src that is unreplaced.
+     */
+    getElementsWithUnreplacedSrcs = () => {
+        // Find elements in the DOM with a 'src' attribute.
+        var srcelements = Array.from(this.body.querySelectorAll('[src]'));
+        
+        // Ignore any that have already had their sources replaced by us.
+        var nonreplaced = srcelements.filter(e => e.dataset.hvpHasReplacedSource == undefined);
+
+        return nonreplaced;
+    }
+
+    /**
+     * Find elements in the linked <body> that have a direct style attribute that contains a url yet to be replaced with its cached version
+     * @return {Array} array of HTMLElement which have a src that is unreplaced.
+     */
+    getElementsWithUnreplacedStyleAttributeUrls = () => {
+        // First find all elements with style=* directly on the element tag.
+        // and filter them where they have a background or background image
+        // and have not been replaced yet.
+        return Array.from(this.body.querySelectorAll('[style]'))
+            .filter(e => this.getBackgroundOrBackgroundImageStyleSrc(e) != '' && e.hvpReplacedSource == undefined);
+    }
+
+    /**
+     * Finds elements with uncached style urls, and updates them with their cached versions
+     */
+    replaceUncachedStyleAttributeUrls = () => {
+        this.getElementsWithUnreplacedStyleAttributeUrls().forEach(e => {
+            const src = this.getBackgroundOrBackgroundImageStyleSrc(e);
+            window.HVP_LOGGER.log("Trying to replace element with non-cached style src " + src + " with mapped source");
+            
+            // Find the corresponding cached src.
+            const cachedsrc = this.getMappedSource(src);
+
+            if(!cachedsrc) {
+                return;
+            }
+
+            // Replace and mark as replaced.
+            e.style.background = e.style.background.replace(src, cachedsrc);
+            e.style.backgroundImage = e.style.backgroundImage.replace(src, cachedsrc);
+            e.hvpReplacedSource = true;
+        });
+    }
+
+    /**
+     * Finds elements with uncached src attributes, and updates them with their cached versions
+     */
+    replaceUncachedSrcs = () => {
+        // Try to replace these with their mapped source and if successful, mark them as done.
+        this.getElementsWithUnreplacedSrcs().forEach(e => {
+            window.HVP_LOGGER.log("Trying to replace non-replaced element " + e.src + " with mapped source");
+
+            const mappedSrc = this.getMappedSource(e.src);
+
+            if (mappedSrc == '') {
+                window.HVP_LOGGER.log("No mapped source for " + e.src + " yet"); 
+                return;
+            }
+            
+            // Found a good mapped source, set it.
+            e.src = mappedSrc;
+            e.dataset.hvpHasReplacedSource = true;
+            window.HVP_LOGGER.log("Replaced element " + e.src + " with mapped source " + mappedSrc);
+
+            // If element is a <source> tag, and its parent is an <audio> tag, trigger the load function
+            // to load the updates source, otherwise it gets stuck thinking the load failed.
+            if(e.tagName == 'SOURCE' && e.parentElement.tagName == 'AUDIO') {
+                window.HVP_LOGGER.log("Element with src " + e.src + " is a source of an audio element. Triggering load for parent audio element");
+                e.parentElement.load();
+            }
+        });
+    }
+
+    /**
+     * Updates the loading notification based on if assets are loading or not
+     */
+    updateLoadingNotification = () => {
+        const isLoadingCachedAssets = this.getElementsWithUnreplacedSrcs().length > 0;
+        const areFontsUnmapped = this.getUnmappedFontNames().length > 0;
+        const isLoading = isLoadingCachedAssets || areFontsUnmapped;
+
+        var loadingbar = document.getElementById('h5p-loading-notification');
+        loadingbar.style.display = isLoading ? 'block' : 'none';
+    }
+
+    /**
+     * Checks the elements with the core-external-content directive, and updates the cached source mapping based on their current state.
+     */
+    checkAndUpdateNewMappings = () => {
+        // Find all the target asset tags in the current dom.
+        var allassets = Array.from(document.getElementById("hvp-cached-assets").children);
+
+        // Filter out the ones already mapped.
+        var nonmapped = allassets.filter(e => !this.isElementSrcOrHrefMapped(e));
+
+        if (nonmapped.length > 0) {
+            window.HVP_LOGGER.log("Found " + nonmapped.length + " unmapped cache assets waiting for caching");
+            window.HVP_LOGGER.log(nonmapped);
+        }
+
+        // Find those ready to be mapped i.e. aren't still caching.
+        var tomap = nonmapped.filter(e => this.isElementReadyToMap(e));
+
+        if(tomap.length > 0) {
+            window.HVP_LOGGER.log("Able to process " + tomap.length + " cached assets ");
+        }
+
+        // Add these to the src map.
+        tomap.forEach(e => {
+            var srcOrHref = this.getSrcOrHref(e);
+            var originalSrcOrHref = this.getOriginalSrcOrHref(e);
+
+            if(srcOrHref == '' || originalSrcOrHref == '') {
+                return;
+            }
+
+            this.mappings[originalSrcOrHref] = srcOrHref;
+        });
+    }
+}
+
+/**
+ * Handles completion in offline app environment.
+ */
+class HvpCompletionSyncHandler {
+    /**
+     * SQLite Db table name
+     * @type {string}
+     */
+    DB_TABLE = 'hvp_mobile_offline_finishes';
+    
+    /**
+     * DB column name for id
+     * @type {string}
+     */
+    DB_COLUMN_ID = 'id';
+
+    /**
+     * DB column name for data
+     * @type {string}
+     */
+    DB_COLUMN_REQUESTS = 'data';
+
+    /**
+     * DB column name for contextId
+     * @type {string}
+     */
+    DB_COLUMN_CONTEXTID = 'contextId';
+
+    /**
+     * Iframe that the H5P content is playing in
+     * @type {HTMLElement}
+     */
+    iframe;
+
+    /*
+     * Create manager
+     * @param {HTMLElement} iframe
+     */
+    constructor(iframe) {
+        this.iframe = iframe;
+    }
+
+    /**
+     * Sets up and starts processing
+     */
+    start = async () => {
+        const H5P = this.iframe.contentWindow.H5P;
+
+        // We need to hook into the global H5P variable.
+        if (!H5P) {
+            window.HVP_LOGGER.log("H5P is not defined globally, cannot capture completion");
+            return;
+        }
+
+        await this.ensureDBSetup();
+
+        // Overwrite the onCompletion callback with our custom cached method.
+        H5P.setFinished = async (contentId, score, maxScore, time) => {
+            // Store this completion and sync.
+            await this.storeForSync({
+                contentId,
+                score,
+                maxScore,
+                time
+            });
+
+            // Try sync - device might be online.
+            await this.sync();
+        };
+
+        window.HVP_LOGGER.log("successfully overwrote setFinished to sync completions offline");
+
+        // Register CRON handler (note this is mobile app cron, not Moodle web cron.)
+        // Essentially is just a background service to run code.
+        var cronhandler = new AddonModHvpSyncCronHandlerService();
+        cronhandler.handler = self;
+        appCtx.CoreCronDelegate.register(cronhandler);
+        window.HVP_LOGGER.log("Successfully registered mobile CRON handler to sync completions")
+
+        // Start an interval that checks if completions are pending, and hides/unhides the notification for the user.
+        const completionnotification = document.getElementById('h5p-grade-sync-notification');
+        setHVPInterval(this.iframe, async () => {
+            const visible = await this.hasRecordsToSync(window.HVPCONTEXTID);
+            completionnotification.style.display = !visible ? 'none' : 'block';
+        }, 1000);
+
+        // Try to sync on load, there might be old records waiting.
+        this.sync();
+    }
+    
+    /**
+     * Ensures the custom database table is setup
+     */
+    ensureDBSetup = async () => {
+        var db = appCtx.CoreSitesProvider.getCurrentSite().getDb();
+        var exists = (await db.execute(`SELECT name FROM sqlite_schema WHERE type='table' AND name = '${this.DB_TABLE}';`)).rows.length != 0;
+        
+        // Ignore if already setup.
+        if (exists) {
+            window.HVP_LOGGER.log("mod_hvp mobile completionsync: DB table setup already");
+            return;
+        }
+
+        // Not setup - set it up.
+        window.HVP_LOGGER.log("mod_hvp mobile completionsync: Setting up DB table");
+
+        var columns = [{
+            name: this.DB_COLUMN_ID,
+            type: 'TEXT',
+            primaryKey: true
+        }, {
+            name: this.DB_COLUMN_CONTEXTID,
+            type: 'INTEGER'
+        }, {
+            name: this.DB_COLUMN_REQUESTS,
+            type: 'TEXT'
+        }];
+        await db.createTable(this.DB_TABLE, columns, [], [], [], 1);
+
+        window.HVP_LOGGER.log("mod_hvp mobile completionsync: DB setup complete");
+    }
+
+    /**
+     * Stores the given data in the local database, so it can be synced
+     * @param {object} data unstructured data to store
+     */
+    storeForSync = async (data) => {
+        window.HVP_LOGGER.log("mod_hvp mobile completionsync: Storing completion data");
+        window.HVP_LOGGER.log(data);
+
+        var db = appCtx.CoreSitesProvider.getCurrentSite().getDb();
+        await db.insertRecord(this.DB_TABLE, {
+            'id': window.crypto.randomUUID(),
+            'contextId': window.HVPCONTEXTID,
+            'data': JSON.stringify(data),
+        });
+    }
+
+    /**
+     * Syncs all the data stored in the custom database,
+     */
+    sync = async () => {
+        window.HVP_LOGGER.log("mod_hvp mobile completionsync: Starting sync");
+        var site = appCtx.CoreSitesProvider.getCurrentSite();
+        var db = await site.getDb();
+
+        const records = await db.getRecords(this.DB_TABLE);
+
+        window.HVP_LOGGER.log("mod_hvp mobile completionsync: Found records:");
+        window.HVP_LOGGER.log(records);
+
+        await Promise.all(records.map(r => this.syncRecord(r, this)));
+
+        window.HVP_LOGGER.log("mod_hvp mobile completionsync: Done");
+        
+        // Update the sync notification (will show to user if sync failed).
+        if (window.HVPupdateFinishSyncNotification) {
+            window.HVPupdateFinishSyncNotification();
+        }
+    }
+
+    /**
+     * Returns true if there are records waiting to be synced for the given context.
+     * Usually used to display a notification to user that completions are pending
+     * @return bool
+     */
+    hasRecordsToSync = async (contextId) => {
+        var db = appCtx.CoreSitesProvider.getCurrentSite().getDb();
+        var count = await db.countRecords(this.DB_TABLE, { 'contextId': contextId });
+        return count > 0;
+    }
+
+    /**
+     * Syncs the given record,
+     * @param {Object} record record stored when hvp emitted its completion event
+     * @param {Object} thisContext 
+     */
+    syncRecord = async (record, thisContext) => {
+        var site = appCtx.CoreSitesProvider.getCurrentSite();
+        var db = site.getDb();
+
+        window.HVP_LOGGER.log("mod_hvp mobile completionsync: syncing record:")
+        window.HVP_LOGGER.log(record);
+
+        try {
+            var data = JSON.parse(record.data);
+            
+            var params = {
+                'contextId': record.contextId,
+                'score': data.score,
+                'maxScore': data.maxScore
+            }
+            window.HVP_LOGGER.log(params);
+
+            // This essentially just calls a webservice on the linked site.
+            const res = await site.write('mod_hvp_submit_mobile_finished', params);
+
+            if (!res.success) {
+                throw new Error("Webservice did not respond with success=true");
+            }
+
+            // Success - so delete the record from the SQLite db.
+            db.deleteRecords(thisContext.DB_TABLE, { 'id': record.id });
+
+            window.HVP_LOGGER.log("mod_hvp mobile completionsync: success for " + record.id);
+        } catch (e) {
+            window.HVP_LOGGER.log("mod_hvp mobile completionsync: Got exception: ");
+            window.HVP_LOGGER.log(e);
+        }
+    }
+}
+
+/**
+ * Mobile app cron handler
+ * Used to sync completions even when the h5p activity is not open.
+ */
+class AddonModHvpSyncCronHandlerService {
+
+    /**
+     * Handler name
+     * @param {string}
+     */
+    name = 'AddonHVPSyncCronHandler';
+
+    /**
+     * Handler
+     * @param {HvpCompletionSyncHandler}
+     */
+    handler
+
+    /**
+     * Execute for a given site
+     * @param {string} siteid
+     * @param {boolean} force
+     */
+    execute = (siteId, force) => {
+        if(this.handler && this.handler.sync) {
+            this.handler.sync();
+        } else {
+            window.console.warn("mod_hvp failed to sync - this.handler or this.handler.sync were undefined. This: ");
+            window.console.log(this);
+        }
+        
+        // We don't care if this fails, just keep re-trying.
+        return true;
+    }
+
+    /**
+     * Returns interval
+     * @return {Number
+     */
+    getInterval() {
+        // 5 mins interval.
+        // Note the minimum interval is 5 minutes (enforced by the app).
+        return 300000;
+    }
+}
+

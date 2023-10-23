@@ -1,0 +1,22 @@
+{{=<% %>=}}
+<div style="height: 100%; width: 100%; background: white;">
+    <ion-chip id="h5p-grade-sync-notification" color="warning" class="completioninfo chip ion-color-warning" style="margin-left: 16px; padding: 10px; font-size: 105%; display: none;"> 
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        {{ 'plugin.mod_hvp.mobilesyncpending' | translate }} 
+    </ion-chip>
+
+    <ion-chip id="h5p-loading-notification" color="info" class="chip ion-color-info" style="margin-left: 16px; padding: 10px; font-size: 105%"> 
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        {{ 'plugin.mod_hvp.mobileloading' | translate }} 
+    </ion-chip>
+
+    <iframe src="about:blank" id="hvp-mobile-iframe" style="width: 100%; height: 100%;"></iframe>
+    <div id="hvp-cached-assets">
+        <%#imagefiles%>
+            <img src="<%fileurl%>" class="hvpcachedimage" style="display: none" core-external-content />
+        <%/imagefiles%>
+        <%#fontfiles%>
+            <a class="hvpcachedfont" style="display: none" href="<%fileurl%>" core-external-content>filetest</a>
+        <%/fontfiles%>
+    </div>
+</div>
