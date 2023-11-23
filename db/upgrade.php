@@ -761,11 +761,8 @@ function xmldb_hvp_upgrade($oldversion) {
         2020112600,
         2022012001,
         2023122501,
-<<<<<<< HEAD
         2024112101,
         2024120903,
-=======
->>>>>>> aece698 (Rename content_type column)
         2026050600,
     ];
 
