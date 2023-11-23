@@ -22,7 +22,10 @@ define(['jquery', 'mod_hvp/communicator'], function($, H5PEmbedCommunicator) {
                 var resizeDelay;
                 var instance = H5P.instances[0];
                 var parentIsFriendly = false;
-
+                var completionactivity = document.getElementsByClassName('activity-header')[0];
+                var comnpletionmargin = document.defaultView.getComputedStyle(completionactivity, '')
+                    .getPropertyValue('margin-bottom');
+                var completionheight = completionactivity.scrollHeight + parseInt(comnpletionmargin, 10); // We want the first element.
                 // Handle that the resizer is loaded after the iframe.
                 H5PEmbedCommunicator.on('ready', function() {
                     H5PEmbedCommunicator.send('hello');
@@ -41,11 +44,10 @@ define(['jquery', 'mod_hvp/communicator'], function($, H5PEmbedCommunicator) {
                     // Content need to be resized to fit the new iframe size.
                     H5P.trigger(instance, 'resize');
                 });
-
                 // When resize has been prepared tell parent window to resize.
                 H5PEmbedCommunicator.on('resizePrepared', function() {
                     H5PEmbedCommunicator.send('resize', {
-                        scrollHeight: iFrame.contentDocument.body.scrollHeight + ((globalThis.completion) ? 50 : 0)
+                        scrollHeight: iFrame.contentDocument.body.scrollHeight + ((globalThis.completion) ? completionheight : 0)
                     });
                 });
 
@@ -66,7 +68,7 @@ define(['jquery', 'mod_hvp/communicator'], function($, H5PEmbedCommunicator) {
                             H5PEmbedCommunicator.send('prepareResize',
                                 {
                                     scrollHeight: iFrame.contentDocument.body.scrollHeight,
-                                    clientHeight: iFrame.contentDocument.body.clientHeight + ((globalThis.completion) ? 50 : 0)
+                                    clientHeight: iFrame.contentDocument.body.clientHeight + ((globalThis.completion) ? completionheight : 0)
                                 }
                             );
                         } else {

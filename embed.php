@@ -82,7 +82,7 @@ $view->validatecontent();
 // Release session while loading the rest of our assets.
 core\session\manager::write_close();
 
-// Verify is the completion information is being displayed
+// Verify is the completion information is being displayed.
 $completiondisplay = false;
 if ($cm->completion != 0) {
     $completiondisplay = true;
