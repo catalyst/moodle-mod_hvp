@@ -45,7 +45,7 @@ define(['jquery', 'mod_hvp/communicator'], function($, H5PEmbedCommunicator) {
                 // When resize has been prepared tell parent window to resize.
                 H5PEmbedCommunicator.on('resizePrepared', function() {
                     H5PEmbedCommunicator.send('resize', {
-                        scrollHeight: iFrame.contentDocument.body.scrollHeight
+                        scrollHeight: iFrame.contentDocument.body.scrollHeight + ((globalThis.completion) ? 50 : 0)
                     });
                 });
 
@@ -66,7 +66,7 @@ define(['jquery', 'mod_hvp/communicator'], function($, H5PEmbedCommunicator) {
                             H5PEmbedCommunicator.send('prepareResize',
                                 {
                                     scrollHeight: iFrame.contentDocument.body.scrollHeight,
-                                    clientHeight: iFrame.contentDocument.body.clientHeight
+                                    clientHeight: iFrame.contentDocument.body.clientHeight + ((globalThis.completion) ? 50 : 0)
                                 }
                             );
                         } else {
@@ -93,5 +93,13 @@ define(['jquery', 'mod_hvp/communicator'], function($, H5PEmbedCommunicator) {
             }
         });
     });
-
+    return  /** @alias module:mod_hvp/embed */ {
+        /**
+         * Initialise embed instance.
+         * @param {boolean} completion a boolean about displaying the completion information
+         */
+        init: function (completion) {
+            globalThis.completion = completion;
+        },
+    };
 });
