@@ -58,8 +58,6 @@ $PAGE->requires->css(generate_css_url('/mod/hvp/view.css'));
 
 // Print page HTML.
 echo $OUTPUT->header();
-
-// Core Moodle 4.0+ already prints the heading and intro.
 if ($CFG->branch < 400) {
     echo $OUTPUT->heading(format_string($content['title']));
     echo '<div class="clearer"></div>';

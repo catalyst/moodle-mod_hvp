@@ -66,7 +66,12 @@ class framework implements \H5PFrameworkInterface {
 
             $context = \context_system::instance();
             $root = view_assets::getsiteroot();
-            $url = "{$root}/mod/hvp/proxy_pluginfile.php/{$context->id}/mod_hvp";
+            $url = "{$root}/pluginfile.php/{$context->id}/mod_hvp";
+
+            $useproxy = get_config('mod_hvp', 'enable_pluginfile_proxy');
+            if (!empty($useproxy)) {
+                $url = "{$root}/mod/hvp/proxy_pluginfile.php/{$context->id}/mod_hvp";
+            }
 
             $language = self::get_language();
 
@@ -215,16 +220,15 @@ class framework implements \H5PFrameworkInterface {
             @set_time_limit(0);
 
             // Generate local tmp file path.
-            $localfolder = $CFG->tempdir . uniqid('/hvp-');
-            $localfile   = $localfolder . '.h5p';
-            $stream      = $localfile;
+            $localfolder = make_temp_directory(uniqid('hvp-'));
+            $localpath = $localfolder . '.h5p';
 
             // Add folder and file paths to H5P Core.
             $interface = self::instance('interface');
             $interface->getUploadedH5pFolderPath($localfolder);
-            $interface->getUploadedH5pPath($localfile);
+            $interface->getUploadedH5pPath($localpath);
 
-            $stream                  = fopen($stream, 'w');
+            $stream = fopen($localpath, 'w');
             $options['CURLOPT_FILE'] = $stream;
         }
 
@@ -245,7 +249,7 @@ class framework implements \H5PFrameworkInterface {
 
         if ($stream !== null) {
             fclose($stream);
-            @chmod($localfile, $CFG->filepermissions);
+            @chmod($localpath, $CFG->filepermissions);
         }
 
         $errorno = $curl->get_errno();

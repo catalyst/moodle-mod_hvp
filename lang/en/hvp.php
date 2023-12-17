@@ -99,6 +99,10 @@ $string['contentstatefrequency_help'] = 'In seconds, how often do you wish the u
 $string['enabledlrscontenttypes'] = 'Enable LRS dependent content types';
 $string['enabledlrscontenttypes_help'] = 'Makes it possible to use content types that rely upon a Learning Record Store to function properly, like the Questionnaire content type.';
 
+$string['proxying_settings_header'] = 'Proxy settings';
+$string['enable_pluginfile_proxy'] = 'Enable pluginfile proxy';
+$string['enable_pluginfile_proxy_help'] = 'Pass requests for h5p files through proxy_pluginfile.php, which has the ability to modify the request.';
+
 // Admin menu.
 $string['contenttypecacheheader'] = 'Content Type Cache';
 $string['settings'] = 'H5P Settings';
@@ -456,6 +460,10 @@ $string['couldnotreadfilefromzip'] = 'Unable to read file from the package: %fil
 $string['couldnotparsejsonfromzip'] = 'Unable to parse JSON from the package: %fileName';
 $string['couldnotparsepostdata'] = 'Could not parse post data.';
 $string['nombstringexteension'] = 'The mbstring PHP extension is not loaded. H5P needs this to function properly';
+$string['invalidhvp'] = 'Invalid H5P activity';
+$string['nohubregistration'] = 'Not registered with H5P Hub';
+$string['invalidtoken'] = 'H5P has received an invalid token. Refresh the page and try again';
+$string['contentnotshared'] = 'H5P activity cannot be shared. Please check your H5P hub registration';
 
 // Messaging api.
 $string['messageprovider:confirmation'] = 'Confirmation of your own H5P submissions';
