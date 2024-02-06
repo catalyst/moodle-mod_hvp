@@ -87,6 +87,12 @@ $completiondisplay = false;
 if ($cm->completion != 0) {
     $completiondisplay = true;
 }
+
+// If there is intro for the activity, we will add height for the embed.
+if (!empty($content['intro'])) {
+    $completiondisplay = true;
+}
+
 // Configure page.
 $PAGE->set_url(new \moodle_url('/mod/hvp/embed.php', array('id' => $id)));
 $PAGE->set_title(format_string($content['title']));
