@@ -171,7 +171,7 @@ class mod_hvp_mod_form extends moodleform_mod {
     }
 
     public function data_preprocessing(&$defaultvalues) {
-        global $DB;
+        global $DB, $PAGE;
         $core = \mod_hvp\framework::instance();
 
         $content = null;
@@ -210,10 +210,12 @@ class mod_hvp_mod_form extends moodleform_mod {
             $defaultvalues['completionpass'] = 0; // Forced unchecked.
         }
 
-        // Add required editor assets.
-        require_once('locallib.php');
-        $mformid = $this->_form->getAttribute('id');
-        \hvp_add_editor_assets($content === null ? null : $defaultvalues['id'], $mformid);
+        if ($PAGE->pagetype != 'course-defaultcompletion') {
+            // Add required editor assets.
+            require_once('locallib.php');
+            $mformid = $this->_form->getAttribute('id');
+            \hvp_add_editor_assets($content === null ? null : $defaultvalues['id'], $mformid);
+        }
     }
 
     /**
