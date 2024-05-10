@@ -635,6 +635,7 @@ function hvp_upgrade_2023122501() {
     }
 }
 
+<<<<<<< HEAD
 /**
  * Adds mobile render method field
  */
@@ -729,6 +730,8 @@ function hvp_upgrade_2024120903() {
         }
     }
 }
+=======
+>>>>>>> aece698 (Rename content_type column)
 
 /**
  * Hvp module upgrade function.
@@ -758,8 +761,11 @@ function xmldb_hvp_upgrade($oldversion) {
         2020112600,
         2022012001,
         2023122501,
+<<<<<<< HEAD
         2024112101,
         2024120903,
+=======
+>>>>>>> aece698 (Rename content_type column)
         2026050600,
     ];
 
