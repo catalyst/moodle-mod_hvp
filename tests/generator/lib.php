@@ -42,7 +42,7 @@ class mod_hvp_generator extends testing_module_generator {
             'name' => 'Test activity',
             'json_content' => '',
             'embed_type' => 'div',
-            'content_type' => null,
+            'contenttype' => null,
             'authors' => '[]',
             'source' => null,
             'year_from' => null,
