@@ -86,6 +86,10 @@ class bundled_mobile_handler {
         $fontmap = $this->extract_fontfiles_from_css($hvpcss);
         $fontmap = array_map(fn($file) => self::file_to_externalfile($file), $fontmap);
 
+        // Get file urls, so the plugin js bootstrapper can cache them itself.
+        $files = array_values(array_merge($this->get_content_files(), $fontmap));
+        $fileurls = array_map(fn($file) => $file['fileurl'], $files);
+
         // Start building the main JS that will be cached by the app.
         $js = '';
 
@@ -96,6 +100,7 @@ class bundled_mobile_handler {
         $js .= 'window.' . js_writer::set_variable('HVPVIEWCSS', $hvpcss, false);
         $js .= 'window.' . js_writer::set_variable('HVPCONTEXTID', $this->context->id, false);
         $js .= 'window.' . js_writer::set_variable('HVPLOGDRAINENABLED', self::is_log_drain_enabled(), false);
+        $js .= 'window.' . js_writer::set_variable('HVP_FILES', $fileurls, false);
 
         // Let the JS know what file maps to what font family.
         $fontfamilymap = array_map(fn($externalfile) => $externalfile['fileurl'], $fontmap);
@@ -107,13 +112,10 @@ class bundled_mobile_handler {
         // Finally add the bootstrapping script, which will actually load everything properly.
         $js .= file_get_contents($CFG->dirroot . '/mod/hvp/hvpiframebootstrap.js');
 
-        // Build the data and files to go into the template.
+        // Build the data to go into the template.
         // Note any arrays MUST be array_values, to make them ordered sequential keys, otherwise mustache explodes.
         $data = [];
         $data['h5pid'] = $this->cm->instance;
-        $data['fontfiles'] = array_values($fontmap);
-        $data['imagefiles'] = array_values($this->get_content_files());
-        $files = array_merge($data['imagefiles'], $data['fontfiles']);
 
         return [
             'templates'  => [

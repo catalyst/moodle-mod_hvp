@@ -49,6 +49,7 @@ function setHVPInterval(iframe, fn, delay) {
 
 // Completion sync handler needs to access the app js, so store a reference to it.
 const appCtx = this;
+window.hvp_app_ctx = appCtx;
 
 elementReady('#hvp-mobile-iframe').then(async iframe => {
     var logger = new HvpLogger(iframe, window.HVPID);
@@ -87,7 +88,7 @@ elementReady('#hvp-mobile-iframe').then(async iframe => {
     window.HVP_LOGGER.log("Style tag injected:");
     window.HVP_LOGGER.log(stylesheet);
 
-    var cachedAssetManager = new HvpCachedAssetManager(iframe, head, body);
+    var cachedAssetManager = new HvpCachedAssetManager(iframe, head, body, window.HVP_FILES || []);
     cachedAssetManager.start();
 
     var completionManager = new HvpCompletionSyncHandler(iframe);
@@ -249,15 +250,24 @@ class HvpCachedAssetManager {
     fontsMapped = [];
 
     /**
+     * A list of original file sources (usually /webservice/pluginfile.php) that need
+     * to be cached
+     * @type { Array }
+     */
+    fileUrlsToCache = [];
+
+    /**
      * Constructs cache manager
      * @param {HTMLElement} iframe
      * @param {HTMLElement} head
      * @param {HTMLElement} body
+     * @param {Array} fileUrlsTocache
      */
-    constructor(iframe, head, body) {
+    constructor(iframe, head, body, fileUrlsToCache = []) {
         this.iframe = iframe;
         this.head = head;
         this.body = body;
+        this.fileUrlsToCache = fileUrlsToCache;
     }
     
     /**
@@ -333,102 +343,6 @@ class HvpCachedAssetManager {
     }
 
     /**
-     * Calculates if the given elements src or href is mapped yet.
-     * @param {HTMlElement} e element to check
-     * @return {boolean} true if mapped, else false.
-     */
-    isElementSrcOrHrefMapped = (e) => {
-        var val = this.getOriginalSrcOrHref(e);
-
-        if(val == '') {
-            return false;
-        }
-
-        return Object.keys(this.mappings).includes(val);
-    }
-
-    /**
-     * returns true if the given element is ready to be mapped.
-     * I.e. is its src or href cached yet
-     *
-     * @param {HTMlElement} e element to check
-     * @return {boolean} true if ready to be mapped
-     */
-    isElementReadyToMap = (e) => {
-        // Some elements will never cache, so are always ready to be mapped.
-        const srcOrHref = this.getSrcOrHref(e);
-        if(this.isUncacheableUrl(srcOrHref)) {
-            return true;
-        }
-
-        return this.isFinishedCaching(e);
-    }
-
-    /**
-     * Returns true if a url is uncacheable, i.e. the directives will never cache it
-     * @param {string} urlString url in string format
-     * @return {boolean}
-     */
-    isUncacheableUrl = (urlString) => {
-        // Parse using URL, to remove any extra info e.g. query strings
-        const url = new URL(urlString);
-        const uncacheableFileTypes = ['.mp4']; // TODO add any more found ? e.g. webm ?
-        const matches = uncacheableFileTypes.find(ending => url.pathname.endsWith(ending)) != null;
-
-        return matches
-    }
-
-    /**
-     * Returns src or href attribute of element
-     * @param {HTMlElement} e
-     * @return {string} src or href attributes, or '' if has neither
-     */
-    getSrcOrHref = (e) => this.getOneOfProperties(e, ['src', 'href']);
-
-    /**
-     * Returns originalSrc or originalHref attribute of element
-     * @param {HTMLElement} e
-     * @return {string} originalSrc or originalHref attributes, or '' if has neither
-     */
-    getOriginalSrcOrHref = (e) => this.getOneOfProperties(e, ['originalSrc', 'originalHref']);
-
-    /**
-     * Determines if the given cache element (i.e. a <img> or <a> with core-external-content directive) has finished its caching process.
-     * @param {HTMLElement} e <img> or <a> tag used to cache an asset
-     * @return {boolean} if finished caching
-     */
-    isFinishedCaching = (e) => {
-        const original = this.getOriginalSrcOrHref(e);
-        const current = this.getSrcOrHref(e);
-
-        const originalHasTokenPluginfile = original.includes('tokenpluginfile.php');
-        const originalIsEmpty = original == '';
-        const currentHasTokenPluginfile = current.includes('tokenpluginfile.php');
-        const currentIsEmpty = current == '';
-
-        return !originalIsEmpty && !currentIsEmpty && !originalHasTokenPluginfile && !currentHasTokenPluginfile;
-    }
-
-    /**
-     * Utility function to find the first of the given properties that exists on either the element directly or the dataset of the element.
-     * If none exist, it return an empty string.
-     * @param {HTMLElement} e element to check
-     * @param {Array} properties array of property strings to check
-     * @return {string} 
-     */
-    getOneOfProperties = (e, properties) => {
-        // Check directly.
-        var values = properties.map(property => e[property] ?? null);
-
-        // Also check on dataset.
-        var datasetvalues = properties.map(property => e.dataset[property] ?? null);
-        values = values.concat(datasetvalues);
-        
-        values = values.filter(e => e != null);
-        return values.find(v => v != null) ?? '';
-    }
-
-    /**
      * Find one of the given properties on the elements style, or an empty string if none found.
      * @param {HTMLElement} e element to check
      * @param {Array} properties array of style properties to check
@@ -479,7 +393,8 @@ class HvpCachedAssetManager {
         var srcelements = Array.from(this.body.querySelectorAll('[src]'));
         
         // Ignore any that have already had their sources replaced by us.
-        var nonreplaced = srcelements.filter(e => e.dataset.hvpHasReplacedSource == undefined);
+        // also ignore any that are not cacheable ever e.g. base64 images.
+        var nonreplaced = srcelements.filter(e => e.dataset.hvpHasReplacedSource == undefined && !e.src.startsWith('data:image'));
 
         return nonreplaced;
     }
@@ -562,36 +477,34 @@ class HvpCachedAssetManager {
     /**
      * Checks the elements with the core-external-content directive, and updates the cached source mapping based on their current state.
      */
-    checkAndUpdateNewMappings = () => {
-        // Find all the target asset tags in the current dom.
-        var allassets = Array.from(document.getElementById("hvp-cached-assets").children);
+    checkAndUpdateNewMappings = async () => {
+        const siteid = await appCtx.CoreSitesProvider.getCurrentSiteId();
 
-        // Filter out the ones already mapped.
-        var nonmapped = allassets.filter(e => !this.isElementSrcOrHrefMapped(e));
+        // Find the urls needing to be mapped that are not yet.
+        const urlsNeedingToBeMapped = this.fileUrlsToCache.filter(url => !Object.keys(this.mappings).includes(url)); 
 
-        if (nonmapped.length > 0) {
-            window.HVP_LOGGER.log("Found " + nonmapped.length + " unmapped cache assets waiting for caching");
-            window.HVP_LOGGER.log(nonmapped);
-        }
-
-        // Find those ready to be mapped i.e. aren't still caching.
-        var tomap = nonmapped.filter(e => this.isElementReadyToMap(e));
-
-        if(tomap.length > 0) {
-            window.HVP_LOGGER.log("Able to process " + tomap.length + " cached assets ");
-        }
-
-        // Add these to the src map.
-        tomap.forEach(e => {
-            var srcOrHref = this.getSrcOrHref(e);
-            var originalSrcOrHref = this.getOriginalSrcOrHref(e);
-
-            if(srcOrHref == '' || originalSrcOrHref == '') {
-                return;
+        // Call getSrcByUrl on all of the srcs. 
+        // This will queue the file for download, or return it if its is already downloaded.
+        const promises = urlsNeedingToBeMapped.map(async url => {
+            const result = await appCtx.CoreFilepoolProvider.getSrcByUrl(siteid, url, null, null, 0, false)
+            return {
+                originalSrc: url,
+                cachedSrc: result
             }
-
-            this.mappings[originalSrcOrHref] = srcOrHref;
         });
+        const results = await Promise.all(promises);
+        
+        // Filter out the ones with tokenpluginfile still in the name
+        // this is a placeholder url the app returns if the file is not cached yet.
+        // so any with this in their name are not fulled cached and should be ignored.
+        const cachedResults = results.filter(r => !r.cachedSrc.includes('tokenpluginfile.php'));
+
+        if (cachedResults.length > 0) {
+            window.HVP_LOGGER.log(cachedResults.length + " new assets finished caching: ");
+            cachedResults.forEach(result => window.HVP_LOGGER.log("finished caching: " + result.originalSrc, ", cached source: " + result.cachedSrc));
+        }
+
+        cachedResults.forEach(result => this.mappings[result.originalSrc] = result.cachedSrc);
     }
 }
 
