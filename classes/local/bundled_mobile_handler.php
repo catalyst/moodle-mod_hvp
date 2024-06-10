@@ -80,6 +80,7 @@ class bundled_mobile_handler {
         // Collate CSS and JS files for the h5p.
         $hvpcss = $this->get_view_css($view);
         $hvpjs = $this->get_core_h5p_js();
+        $hvpjs .= $this->get_middleware_js();
         $hvpjs .= $this->get_view_js($view);
 
         // Extract font files and turn them into external files so the app can cache them.
@@ -127,6 +128,16 @@ class bundled_mobile_handler {
             'javascript' => $js,
             'files' => $files,
         ];
+    }
+
+    /**
+     * Returns the middleware js.
+     * This is the JS that runs after H5P core has started, but the content type has not been executed yet.
+     * @return string
+     */
+    private function get_middleware_js(): string {
+        global $CFG;
+        return file_get_contents($CFG->dirroot . '/mod/hvp/hvpofflinemiddleware.js');
     }
 
     /**

@@ -47,15 +47,34 @@ function setHVPInterval(iframe, fn, delay) {
     return interval;
 }
 
+function setHVPWindowEventListener(iframe, eventname, fn) {
+    const controller = new AbortController();
+
+    window.addEventListener(eventname, fn, { signal: controller.signal });
+
+    var interval = setInterval(() => {
+        if (!iframe.isConnected) {
+            window.HVP_LOGGER.log("iframe isConnected changed to false indicating page unload, cancelling window event listener for " + eventname);
+
+            // Abort controller, this will remove the event listener.
+            controller.abort();
+
+            // Cleanup interval.
+            clearInterval(interval);
+            return;
+        };
+    }, 500);
+}
+
 // Completion sync handler needs to access the app js, so store a reference to it.
 const appCtx = this;
 window.hvp_app_ctx = appCtx;
+
 
 elementReady('#hvp-mobile-iframe').then(async iframe => {
     var logger = new HvpLogger(iframe, window.HVPID);
     logger.start();
     window.HVP_LOGGER = logger;
-
     window.HVP_LOGGER.log("setting up iframe");
 
     var head = iframe.contentWindow.document.head;
@@ -144,6 +163,21 @@ class HvpLogger {
      */
     start = () => {
         setHVPInterval(this.iframe, () => this.processQueue(), 1000);
+        this.setupIframeLogListener()
+    }
+
+    /**
+     * Sets up a listener for log events posted to us from inside the iframe
+     * if any are received, they are forwarded to the log handler
+     */
+    setupIframeLogListener = () => {
+        const callback = e => {
+            if(e.data.context == 'hvp' && e.data.action == 'log') {
+                this.log(e.data.data);
+            }
+        }
+
+        setHVPWindowEventListener(this.iframe, 'message', callback);
     }
 
     /**
@@ -208,8 +242,6 @@ class HvpLogger {
 
 /**
  * Cached asset manager.
- * Handles watching for assets to cache via angular directives, and then replaces elements
- * in the h5p as needed.
  */
 class HvpCachedAssetManager {
     /**
@@ -292,10 +324,16 @@ class HvpCachedAssetManager {
      */
     onInterval = () => {
         this.checkAndUpdateNewMappings();
-        this.replaceUncachedSrcs();
-        this.replaceUncachedStyleAttributeUrls();
         this.checkAndUpdateFontMappings();
         this.updateLoadingNotification();
+    }
+
+    /**
+     * Returns true if all the fileUrlsToCache are finishing caching and exist in the mapping
+     * @return {Boolean}
+     */
+    isCachingFinished = () => {
+        return Object.keys(this.mappings).length == this.filsUrlsToCache;
     }
 
     /**
@@ -343,130 +381,10 @@ class HvpCachedAssetManager {
     }
 
     /**
-     * Find one of the given properties on the elements style, or an empty string if none found.
-     * @param {HTMLElement} e element to check
-     * @param {Array} properties array of style properties to check
-     * @return {string} value, or empty string if none are set
-     */
-    getOneOfStyleProperties = (e, properties) => {
-        const values = properties.map(property => e.style[property] ?? null);
-        return values.find(v => v != null) ?? '';
-    }
-
-    /**
-     * Returns background or background-image style src url for a given element.
-     * @param {HTMLElement} e;
-     * @return {String} url of background image, or empty string if none found or malformed.
-     */
-     getBackgroundOrBackgroundImageStyleSrc = (e) => {
-        const val = this.getOneOfStyleProperties(e, ['background', 'background-image'])
-        const regex = /url\(['"]?(.*?)['"]?\)/gi;
-        const result = val.match(regex);
-
-        if(!result || result.length == 0) {
-            return '';
-        }
-        // Remove the first 5 chars "url("" and last 2 "")" chars.
-        // Easier to do this in js than regex.
-        const url = result[0].slice(5, -2);
-        return url;
-    };
-
-    /*
-     * Returns the mapped source for the given source.
-     * @param {string} src original source
-     * @param {string} mapped source, or empty string if not mapped
-     */
-    getMappedSource = (src) => {
-        // Replace the '/pluginfile.php' with '/webservice/pluginfile.php' since the cached sources
-        // will have /webservice prepended to it.
-        src = src.replace('/pluginfile.php', '/webservice/pluginfile.php');
-        return this.mappings[src] ?? '';
-    }
-
-    /**
-     * Find elements in the linked <body> that have sources that are yet to be replaced with their cached versions
-     * @return {Array} array of HTMLElement which have a src that is unreplaced.
-     */
-    getElementsWithUnreplacedSrcs = () => {
-        // Find elements in the DOM with a 'src' attribute.
-        var srcelements = Array.from(this.body.querySelectorAll('[src]'));
-        
-        // Ignore any that have already had their sources replaced by us.
-        // also ignore any that are not cacheable ever e.g. base64 images.
-        var nonreplaced = srcelements.filter(e => e.dataset.hvpHasReplacedSource == undefined && !e.src.startsWith('data:image'));
-
-        return nonreplaced;
-    }
-
-    /**
-     * Find elements in the linked <body> that have a direct style attribute that contains a url yet to be replaced with its cached version
-     * @return {Array} array of HTMLElement which have a src that is unreplaced.
-     */
-    getElementsWithUnreplacedStyleAttributeUrls = () => {
-        // First find all elements with style=* directly on the element tag.
-        // and filter them where they have a background or background image
-        // and have not been replaced yet.
-        return Array.from(this.body.querySelectorAll('[style]'))
-            .filter(e => this.getBackgroundOrBackgroundImageStyleSrc(e) != '' && e.hvpReplacedSource == undefined);
-    }
-
-    /**
-     * Finds elements with uncached style urls, and updates them with their cached versions
-     */
-    replaceUncachedStyleAttributeUrls = () => {
-        this.getElementsWithUnreplacedStyleAttributeUrls().forEach(e => {
-            const src = this.getBackgroundOrBackgroundImageStyleSrc(e);
-            window.HVP_LOGGER.log("Trying to replace element with non-cached style src " + src + " with mapped source");
-            
-            // Find the corresponding cached src.
-            const cachedsrc = this.getMappedSource(src);
-
-            if(!cachedsrc) {
-                return;
-            }
-
-            // Replace and mark as replaced.
-            e.style.background = e.style.background.replace(src, cachedsrc);
-            e.style.backgroundImage = e.style.backgroundImage.replace(src, cachedsrc);
-            e.hvpReplacedSource = true;
-        });
-    }
-
-    /**
-     * Finds elements with uncached src attributes, and updates them with their cached versions
-     */
-    replaceUncachedSrcs = () => {
-        // Try to replace these with their mapped source and if successful, mark them as done.
-        this.getElementsWithUnreplacedSrcs().forEach(e => {
-            window.HVP_LOGGER.log("Trying to replace non-replaced element " + e.src + " with mapped source");
-
-            const mappedSrc = this.getMappedSource(e.src);
-
-            if (mappedSrc == '') {
-                window.HVP_LOGGER.log("No mapped source for " + e.src + " yet"); 
-                return;
-            }
-            
-            // Found a good mapped source, set it.
-            e.src = mappedSrc;
-            e.dataset.hvpHasReplacedSource = true;
-            window.HVP_LOGGER.log("Replaced element " + e.src + " with mapped source " + mappedSrc);
-
-            // If element is a <source> tag, and its parent is an <audio> tag, trigger the load function
-            // to load the updates source, otherwise it gets stuck thinking the load failed.
-            if(e.tagName == 'SOURCE' && e.parentElement.tagName == 'AUDIO') {
-                window.HVP_LOGGER.log("Element with src " + e.src + " is a source of an audio element. Triggering load for parent audio element");
-                e.parentElement.load();
-            }
-        });
-    }
-
-    /**
      * Updates the loading notification based on if assets are loading or not
      */
     updateLoadingNotification = () => {
-        const isLoadingCachedAssets = this.getElementsWithUnreplacedSrcs().length > 0;
+        const isLoadingCachedAssets = this.isCachingFinished();
         const areFontsUnmapped = this.getUnmappedFontNames().length > 0;
         const isLoading = isLoadingCachedAssets || areFontsUnmapped;
 
@@ -505,6 +423,21 @@ class HvpCachedAssetManager {
         }
 
         cachedResults.forEach(result => this.mappings[result.originalSrc] = result.cachedSrc);
+
+        if (cachedResults.length > 0) {
+            this.notifyNewMappings();
+        }
+    }
+
+    /**
+     * Notify the class inside of the h5p iframe of new mappings.
+     */
+    notifyNewMappings = () => {
+        this.iframe.contentWindow.postMessage({ 
+            "context": "hvp",
+            "action": "newmappings",
+            "data": this.mappings
+        });
     }
 }
 
