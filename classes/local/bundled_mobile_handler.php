@@ -355,7 +355,7 @@ class bundled_mobile_handler {
     /**
      * Extracts a list of font families and their linked sources from the given css
      * This will only return the first font for each family that is correctly found inside the file storage.
-     * It also ignores .eot fonts, which do not appear to work in the mobile app.
+     * Note this ONLY returns ttf fonts, for maximum compatibility.
      *
      * @param string $css
      * @return array array of font family name => stored_file pairs.
@@ -456,8 +456,8 @@ class bundled_mobile_handler {
             // Filter out any broken files.
             $files = array_filter($files);
 
-            // Filter out any .eot files which do not appear to work.
-            $files = array_filter($files, fn($file) => !str_ends_with($file->get_filename(), '.eot'));
+            // Filter out non .ttf files.
+            $files = array_filter($files, fn($file) => str_ends_with($file->get_filename(), '.ttf'));
 
             return [
                 $family => $files,

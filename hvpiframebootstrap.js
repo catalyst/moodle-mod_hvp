@@ -368,7 +368,8 @@ class HvpCachedAssetManager {
             const cssToAdd = `
                 @font-face {
                     font-family: '${fontName}';
-                    src: url('${mappedSource}');
+                    src: url('${mappedSource}') format("truetype");
+                    font-style: normal;
                 }
             `;
 
