@@ -115,18 +115,27 @@ class HvpAssetReplacer {
     replaceElementsWithUncachedStyleValues = () => {
         this.getElementsWithUnreplacedStyleAttributeUrls().forEach(e => {
             const src = this.getBackgroundOrBackgroundImageStyleSrc(e);
+
             hvpLog("mod_hvp inside iframe: Trying to replace element with non-cached style src " + src + " with mapped source");
             
             // Find the corresponding cached src.
             const cachedsrc = this.getMappedSource(src);
 
-            if(!cachedsrc) {
+            if(!cachedsrc || cachedsrc == '') {
                 return;
             }
 
             // Replace and mark as replaced.
-            e.style.background = e.style.background.replace(src, cachedsrc);
-            e.style.backgroundImage = e.style.backgroundImage.replace(src, cachedsrc);
+            hvpLog("mod_hvp inside iframe: Replacing style src " + src + " with " + cachedsrc);
+
+            if(e.style.background && e.style.background != '' && e.style.background != 'none') {
+                e.style.background = e.style.background.replace(src, cachedsrc);
+            }
+
+            if(e.style.backgroundImage && e.style.backgroundImage != '' && e.style.backgroundImage != 'none') {
+                e.style.backgroundImage = e.style.backgroundImage.replace(src, cachedsrc);
+            }
+
             e.hvpReplacedSource = true;
         });
     }
@@ -162,8 +171,8 @@ class HvpAssetReplacer {
      * @return {string} value, or empty string if none are set
      */
     getOneOfStyleProperties = (e, properties) => {
-        const values = properties.map(property => e.style[property] ?? null);
-        return values.find(v => v != null) ?? '';
+        const values = properties.map(property => e.style[property]);
+        return values.find(v => v != null && v != '' && v != 'none') ?? '';
     }
 
     /**
@@ -172,7 +181,7 @@ class HvpAssetReplacer {
      * @return {String} url of background image, or empty string if none found or malformed.
      */
      getBackgroundOrBackgroundImageStyleSrc = (e) => {
-        const val = this.getOneOfStyleProperties(e, ['background', 'background-image'])
+        const val = this.getOneOfStyleProperties(e, ['background', 'backgroundImage'])
         const regex = /url\(['"]?(.*?)['"]?\)/gi;
         const result = val.match(regex);
 
