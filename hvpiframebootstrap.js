@@ -449,7 +449,7 @@ class HvpCompletionSyncHandler {
      * SQLite Db table name
      * @type {string}
      */
-    DB_TABLE = 'hvp_mobile_offline_finishes';
+    static DB_TABLE = 'hvp_mobile_offline_finishes';
     
     /**
      * DB column name for id
@@ -491,7 +491,7 @@ class HvpCompletionSyncHandler {
 
         // We need to hook into the global H5P variable.
         if (!H5P) {
-            window.HVP_LOGGER.log("H5P is not defined globally, cannot capture completion");
+            HvpCompletionSyncHandler.log("H5P is not defined globally, cannot capture completion");
             return;
         }
 
@@ -508,17 +508,17 @@ class HvpCompletionSyncHandler {
             });
 
             // Try sync - device might be online.
-            await this.sync();
+            await HvpCompletionSyncHandler.sync();
         };
 
-        window.HVP_LOGGER.log("successfully overwrote setFinished to sync completions offline");
+        HvpCompletionSyncHandler.log("successfully overwrote setFinished to sync completions offline");
 
         // Register CRON handler (note this is mobile app cron, not Moodle web cron.)
         // Essentially is just a background service to run code.
         var cronhandler = new AddonModHvpSyncCronHandlerService();
-        cronhandler.handler = self;
+        cronhandler.handler = HvpCompletionSyncHandler;
         appCtx.CoreCronDelegate.register(cronhandler);
-        window.HVP_LOGGER.log("Successfully registered mobile CRON handler to sync completions")
+        HvpCompletionSyncHandler.log("Successfully registered mobile CRON handler to sync completions")
 
         // Start an interval that checks if completions are pending, and hides/unhides the notification for the user.
         const completionnotification = document.getElementById('h5p-grade-sync-notification');
@@ -528,7 +528,7 @@ class HvpCompletionSyncHandler {
         }, 1000);
 
         // Try to sync on load, there might be old records waiting.
-        this.sync();
+        HvpCompletionSyncHandler.sync();
     }
     
     /**
@@ -536,16 +536,16 @@ class HvpCompletionSyncHandler {
      */
     ensureDBSetup = async () => {
         var db = appCtx.CoreSitesProvider.getCurrentSite().getDb();
-        var exists = (await db.execute(`SELECT name FROM sqlite_schema WHERE type='table' AND name = '${this.DB_TABLE}';`)).rows.length != 0;
+        var exists = (await db.execute(`SELECT name FROM sqlite_schema WHERE type='table' AND name = '${HvpCompletionSyncHandler.DB_TABLE}';`)).rows.length != 0;
         
         // Ignore if already setup.
         if (exists) {
-            window.HVP_LOGGER.log("mod_hvp mobile completionsync: DB table setup already");
+            HvpCompletionSyncHandler.log("mod_hvp mobile completionsync: DB table setup already");
             return;
         }
 
         // Not setup - set it up.
-        window.HVP_LOGGER.log("mod_hvp mobile completionsync: Setting up DB table");
+        HvpCompletionSyncHandler.log("mod_hvp mobile completionsync: Setting up DB table");
 
         var columns = [{
             name: this.DB_COLUMN_ID,
@@ -558,9 +558,9 @@ class HvpCompletionSyncHandler {
             name: this.DB_COLUMN_REQUESTS,
             type: 'TEXT'
         }];
-        await db.createTable(this.DB_TABLE, columns, [], [], [], 1);
+        await db.createTable(HvpCompletionSyncHandler.DB_TABLE, columns, [], [], [], 1);
 
-        window.HVP_LOGGER.log("mod_hvp mobile completionsync: DB setup complete");
+        HvpCompletionSyncHandler.log("mod_hvp mobile completionsync: DB setup complete");
     }
 
     /**
@@ -568,11 +568,11 @@ class HvpCompletionSyncHandler {
      * @param {object} data unstructured data to store
      */
     storeForSync = async (data) => {
-        window.HVP_LOGGER.log("mod_hvp mobile completionsync: Storing completion data");
-        window.HVP_LOGGER.log(data);
+        HvpCompletionSyncHandler.log("mod_hvp mobile completionsync: Storing completion data");
+        HvpCompletionSyncHandler.log(data);
 
         var db = appCtx.CoreSitesProvider.getCurrentSite().getDb();
-        await db.insertRecord(this.DB_TABLE, {
+        await db.insertRecord(HvpCompletionSyncHandler.DB_TABLE, {
             'id': window.crypto.randomUUID(),
             'contextId': window.HVPCONTEXTID,
             'data': JSON.stringify(data),
@@ -580,21 +580,22 @@ class HvpCompletionSyncHandler {
     }
 
     /**
-     * Syncs all the data stored in the custom database,
+     * Syncs all the data stored in the custom database.
+     * Note - this MUST be static, so it can be called outside of this page by the CRON handler.
      */
-    sync = async () => {
-        window.HVP_LOGGER.log("mod_hvp mobile completionsync: Starting sync");
+    static sync = async () => {
+        HvpCompletionSyncHandler.log("mod_hvp mobile completionsync: Starting sync");
         var site = appCtx.CoreSitesProvider.getCurrentSite();
         var db = await site.getDb();
 
-        const records = await db.getRecords(this.DB_TABLE);
+        const records = await db.getRecords(HvpCompletionSyncHandler.DB_TABLE);
 
-        window.HVP_LOGGER.log("mod_hvp mobile completionsync: Found records:");
-        window.HVP_LOGGER.log(records);
+        HvpCompletionSyncHandler.log("mod_hvp mobile completionsync: Found records:");
+        HvpCompletionSyncHandler.log(records);
 
-        await Promise.all(records.map(r => this.syncRecord(r, this)));
+        await Promise.all(records.map(r => HvpCompletionSyncHandler.syncRecord(r, this)));
 
-        window.HVP_LOGGER.log("mod_hvp mobile completionsync: Done");
+        HvpCompletionSyncHandler.log("mod_hvp mobile completionsync: Done");
         
         // Update the sync notification (will show to user if sync failed).
         if (window.HVPupdateFinishSyncNotification) {
@@ -609,21 +610,22 @@ class HvpCompletionSyncHandler {
      */
     hasRecordsToSync = async (contextId) => {
         var db = appCtx.CoreSitesProvider.getCurrentSite().getDb();
-        var count = await db.countRecords(this.DB_TABLE, { 'contextId': contextId });
+        var count = await db.countRecords(HvpCompletionSyncHandler.DB_TABLE, { 'contextId': contextId });
         return count > 0;
     }
 
     /**
-     * Syncs the given record,
+     * Syncs the given record.
+     * Note - this MUST be static, so it can be called outside of this page by the CRON handler.
      * @param {Object} record record stored when hvp emitted its completion event
      * @param {Object} thisContext 
      */
-    syncRecord = async (record, thisContext) => {
+    static syncRecord = async (record, thisContext) => {
         var site = appCtx.CoreSitesProvider.getCurrentSite();
         var db = site.getDb();
 
-        window.HVP_LOGGER.log("mod_hvp mobile completionsync: syncing record:")
-        window.HVP_LOGGER.log(record);
+        HvpCompletionSyncHandler.log("mod_hvp mobile completionsync: syncing record:")
+        HvpCompletionSyncHandler.log(record);
 
         try {
             var data = JSON.parse(record.data);
@@ -633,7 +635,7 @@ class HvpCompletionSyncHandler {
                 'score': data.score,
                 'maxScore': data.maxScore
             }
-            window.HVP_LOGGER.log(params);
+            HvpCompletionSyncHandler.log(params);
 
             // This essentially just calls a webservice on the linked site.
             const res = await site.write('mod_hvp_submit_mobile_finished', params);
@@ -645,10 +647,22 @@ class HvpCompletionSyncHandler {
             // Success - so delete the record from the SQLite db.
             db.deleteRecords(thisContext.DB_TABLE, { 'id': record.id });
 
-            window.HVP_LOGGER.log("mod_hvp mobile completionsync: success for " + record.id);
+            HvpCompletionSyncHandler.log("mod_hvp mobile completionsync: success for " + record.id);
         } catch (e) {
-            window.HVP_LOGGER.log("mod_hvp mobile completionsync: Got exception: ");
-            window.HVP_LOGGER.log(e);
+            HvpCompletionSyncHandler.log("mod_hvp mobile completionsync: Got exception: ");
+            HvpCompletionSyncHandler.log(e);
+        }
+    }
+
+    /**
+     * Logs a message to HVP logger if available, otherwise the default console.
+     * @param {any} msg
+     */
+    static log = (msg) => {
+        if(window.HVP_LOGGER) {
+            window.HVP_LOGGER.log(msg);
+        } else {
+            window.console.log(msg);
         }
     }
 }
@@ -663,13 +677,7 @@ class AddonModHvpSyncCronHandlerService {
      * Handler name
      * @param {string}
      */
-    name = 'AddonHVPSyncCronHandler';
-
-    /**
-     * Handler
-     * @param {HvpCompletionSyncHandler}
-     */
-    handler
+    name = 'AddonModHVPSyncCronHandler';
 
     /**
      * Execute for a given site
@@ -677,12 +685,7 @@ class AddonModHvpSyncCronHandlerService {
      * @param {boolean} force
      */
     execute = (siteId, force) => {
-        if(this.handler && this.handler.sync) {
-            this.handler.sync();
-        } else {
-            window.console.warn("mod_hvp failed to sync - this.handler or this.handler.sync were undefined. This: ");
-            window.console.log(this);
-        }
+        HvpCompletionSyncHandler.sync();
         
         // We don't care if this fails, just keep re-trying.
         return true;
