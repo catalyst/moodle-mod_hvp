@@ -221,6 +221,14 @@ class bundled_mobile_handler {
             }
         }
 
+        // Add an additional block to ensure everything is rendered in a sans-serif font.
+        // otherwise the default font may be used which is Roboto (sans-serif) for Android, and a NY (serif) for IOS.
+        $rawcss .= "
+            body {
+                font-family: sans-serif;
+            }
+        ";
+
         return $rawcss;
     }
 
