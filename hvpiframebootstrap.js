@@ -47,6 +47,14 @@ function setHVPInterval(iframe, fn, delay) {
     return interval;
 }
 
+/**
+ * Adds an event listener for a particular event on the window.
+ * The listener is cleared automatically if the iframe becomes unloaded.
+ * This is because similar to setHVPInterval, the window is global to the app
+ * @param {HTMLElement} iframe
+ * @param {string} eventname
+ * @param {() => void} callback function when the event is triggered
+ */
 function setHVPWindowEventListener(iframe, eventname, fn) {
     const controller = new AbortController();
 
