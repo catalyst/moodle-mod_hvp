@@ -70,13 +70,15 @@ function setHVPWindowEventListener(iframe, eventname, fn) {
 const appCtx = this;
 window.hvp_app_ctx = appCtx;
 
-
 elementReady('#hvp-mobile-iframe').then(async iframe => {
     var logger = new HvpLogger(iframe, window.HVPID);
     logger.start();
     window.HVP_LOGGER = logger;
-    window.HVP_LOGGER.log("setting up iframe");
 
+    const resizer = new HvpResizeManager(iframe);
+    resizer.start(); // TODO put onto window obj
+
+    window.HVP_LOGGER.log("setting up iframe");
     var head = iframe.contentWindow.document.head;
     var body = iframe.contentWindow.document.body;
 
@@ -237,6 +239,64 @@ class HvpLogger {
         } catch (ex) {
             window.console.log("error sending logs to site");
         }
+    }
+}
+
+/**
+ * Manages vertical height resizing
+ */
+class HvpResizeManager {
+    /**
+     * The iframe to watch to calculate height
+     * @type {HTMLElement}
+     */
+    iframe;
+    
+    /**
+     * The root element, that encloses the iframe
+     * @type {HTMLElement}
+     */
+    root;
+
+    /**
+     * Construct manager
+     * @param {HTMlElement} iframe to watch height for
+     */
+    constructor(iframe) {
+        this.iframe = iframe;
+        this.root = document.getElementById('hvp-root');
+    }
+
+    /**
+     * Starts height update interval
+     */
+    start = () => {
+        // Because the iframe can change heights as it loads,
+        // (it generally starts quite small and gets much larger once images, etc.. load in)
+        // we want to watch this over time, not just once at the start.
+        setHVPInterval(this.iframe, this.onInterval, 1000);
+    }
+
+    /**
+     * Interval function. Does the height changing
+     */
+    onInterval = () => {
+        // Get the currently set height of the root element, or zero if not set.
+        const currentRootHeight = parseInt((this.root.style.height || "0px").replace("px", ""));
+
+        // Find the current height that the iframe content is (its scrollHeight).
+        const desiredHeight = this.iframe.contentWindow.document.body.scrollHeight;
+        
+        // Change it if they are different.
+        if (currentRootHeight != desiredHeight) {
+            window.HVP_LOGGER.log("Resize: setting height to " + desiredHeight);
+            this.root.style.height = desiredHeight + "px";
+        }
+
+        // Note we do not usually care about width. Most content happy fits the width,
+        // but will tend to scroll as they like to expand their height.
+        // We want to avoid scrolling inside of the iframe, and have the scrolling done
+        // on the app instead.
     }
 }
 

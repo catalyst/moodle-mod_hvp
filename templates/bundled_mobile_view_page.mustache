@@ -1,5 +1,5 @@
 {{=<% %>=}}
-<div style="height: 100%; width: 100%; background: white;">
+<div id="hvp-root" style="display: flex; padding-right: 5vw; flex-direction: column">
     <ion-chip id="h5p-grade-sync-notification" color="warning" class="completioninfo chip ion-color-warning" style="margin-left: 16px; padding: 10px; font-size: 105%; display: none;"> 
         <ion-icon name="alert-circle-outline"></ion-icon>
         {{ 'plugin.mod_hvp.mobilesyncpending' | translate }} 
@@ -10,5 +10,5 @@
         {{ 'plugin.mod_hvp.mobileloading' | translate }} 
     </ion-chip>
 
-    <iframe src="about:blank" id="hvp-mobile-iframe" style="width: 90vw; height: 100%;"></iframe>
+    <iframe src="about:blank" id="hvp-mobile-iframe"></iframe>
 </div>
