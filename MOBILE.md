@@ -35,9 +35,9 @@ Note the mobile app caches the activity. This means changes to the activity (e.g
 | ------- | ------------- | ----- |
 | Offline completion | ✅ Supported  | Completion will be stored and re-synced when the device comes online |
 | Cached audio | ✅ Supported | |
+| Cached video | ✅ Supported | |
 | Cached images | 🆗 Mostly supported | Images in CSS that are not directly on an elements style attribute are not cached |
-| Cached fonts and icons | 🆗 Mostly supported | `.eot` fonts are ignored as they are not supported by the mobile app. Core fonts may need manual mapping if not mapped already. |
-| Cached video | ❌ Not supported | The caching method used by the app will not cache videos, so they are ignored. Videos should still play, but will not be available offline. |
+| Cached fonts and icons | 🆗 Mostly supported | Only `.ttf` is supported, as other fonts are not compatible on IOS. Note the default font differs between operating system (e.g. Roboto on Android, and SF Pro on IOS) |
 | Fullscreen | ❌ Not supported | The app has no nice way to exit fullscreen (since there is no physical keyboard), so all H5Ps have fullscreen mode disabled |
 
 | Content type | Support Level | Notes |
@@ -45,14 +45,26 @@ Note the mobile app caches the activity. This means changes to the activity (e.g
 | Course presentation | ✅ Supported |
 | Quiz | ✅ Supported |
 | Accordion | ✅ Supported |
-| Interactive video | 🆗 Mostly supported | Videos are not cached, but they will play when online. |
+| Interactive video | ✅ Supported | `.webm` videos are not playable on IOS due to IOS missing the required codecs. Note large videos can take minutes to download, and the user will need to way for the entire video to download before it will begin playing (partial/streaming playback is not supported). |
+| Image slider | ✅ Supported |
+| Image hotspots | ✅ Supported | < `1.10.7` is not supported due to issues with fullscreen being disabled |
 | Document export | ❌ Not supported | |
 
 Most content types should work, but after testing they should be listed here as either supported, or unsupported.
 
+## Other notes
+- Changing orientation of the device after the h5p loads has mixed support among the content types. Most H5P content types are built with desktop in mind which does not support orientation changing.
+- After the initial load of a H5P activity, the user will need to re-synchronise the course to see any changes that are made.
+
 ## For Developers
 
 Developers wanting to make updates to or work with the bundled hvp method, please read the below.
+
+### Caching
+Be aware of what caches may exist so ensure changes made are propogated properly:
+- For mustache template changes, you must purge the sites template cache.
+- For JS or content type changes, the user must re-synchronise the course inside the app.
+- You may also need to delete the downloaded data for the course inside the app.
 
 ### Lang strings
 Lang strings are cached by the app based on the plugin version. You MUST increase the version every time the lang strings change. Simply purging the app/moodle caches will not load them in.
@@ -71,3 +83,6 @@ Be wary of relying on a specific format for file extension to see if an app is a
 
 ### Debugging
 You can get the mobile app using the bundled method to forward javascript logs back to the sites error log using the setting `mod_hvp/mobiledebugging`. Note this value is included in the bundles javascript so the user must reload their course cache for the new value to take effect.
+
+### CRON handler
+Any changes to the mobile (not web) CRON handler require the user to log out and back in again.
