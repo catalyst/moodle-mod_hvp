@@ -80,8 +80,10 @@ class bundled_mobile_handler {
         // Collate CSS and JS files for the h5p.
         $hvpcss = $this->get_view_css($view);
         $hvpjs = $this->get_core_h5p_js();
-        $hvpjs .= $this->get_middleware_js();
         $hvpjs .= $this->get_view_js($view);
+
+        $middlewarejs = $this->get_middleware_js();
+        $overloadjs = $this->get_overload_js();
 
         // Extract font files and turn them into external files so the app can cache them.
         $fontmap = $this->extract_fontfiles_from_css($hvpcss);
@@ -103,7 +105,9 @@ class bundled_mobile_handler {
         // Set various variables required by the offline bootstrapper.
         // Put these on the window so it's easier to debug/inspect.
         $jsdata = [
-            'js' => $hvpjs,
+            'middlewarejs' => $middlewarejs,
+            'hvpjs' => $hvpjs,
+            'overloadjs' => $overloadjs,
             'id' => $this->cm->instance,
             'css' => $hvpcss,
             'contextid' => $this->context->id,
@@ -150,6 +154,17 @@ class bundled_mobile_handler {
     private function get_middleware_js(): string {
         global $CFG;
         return file_get_contents($CFG->dirroot . '/mod/hvp/hvpofflinemiddleware.js');
+    }
+
+    /**
+     * Returns the overload js
+     * This is the JS that is placed at the very end, after the H5P js.
+     * This allows us to overload certain H5P functions.
+     * @return string
+     */
+    private function get_overload_js(): string {
+        global $CFG;
+        return file_get_contents($CFG->dirroot . '/mod/hvp/hvpoverload.js');
     }
 
     /**

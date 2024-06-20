@@ -72,7 +72,13 @@ class HvpAssetReplacer {
         // Use a set to make it unique.
         const elements = [...new Set([...srcelements, ...this.elementsToConsider])];
 
-        var nonreplaced = elements.filter(e => e.dataset.hvpHasReplacedSource == undefined && !e.src.startsWith('data:image'));
+        var nonreplaced = elements.filter(e => 
+            // Ignore base64.
+            !e.src.startsWith('data:image') &&
+
+            // Ignore ones with already cached src.
+            !Object.values(this.mappings).includes(e.src)
+        );
 
         return nonreplaced;
     }
@@ -135,8 +141,6 @@ class HvpAssetReplacer {
             if(e.style.backgroundImage && e.style.backgroundImage != '' && e.style.backgroundImage != 'none') {
                 e.style.backgroundImage = e.style.backgroundImage.replace(src, cachedsrc);
             }
-
-            e.hvpReplacedSource = true;
         });
     }
 
@@ -149,7 +153,21 @@ class HvpAssetReplacer {
         // and filter them where they have a background or background image
         // and have not been replaced yet.
         return Array.from(document.body.querySelectorAll('[style]'))
-            .filter(e => this.getBackgroundOrBackgroundImageStyleSrc(e) != '' && e.hvpReplacedSource == undefined);
+            .filter(e => {
+                const src = this.getBackgroundOrBackgroundImageStyleSrc(e);
+
+                // No src, not able to replace.
+                if (!src) {
+                    return false;
+                }
+
+                // Has src, but is already replaced.
+                if (Object.values(this.mappings).includes(src)) {
+                    return false;
+                }
+
+                return true;
+            });
     }
 
     /*
@@ -162,6 +180,21 @@ class HvpAssetReplacer {
         // will have /webservice prepended to it.
         src = src.replace('/pluginfile.php', '/webservice/pluginfile.php');
         return this.mappings[src] ?? '';
+    }
+
+    /**
+     * Returns the mapped source that ends with the given path. If none exists, returns an empty string.
+     * @param {String} path file path
+     * @return string
+     */
+    findMappedSourceByPath = (path) => {
+        const mappingsEndingWith = Object.keys(this.mappings).filter(m => m.endsWith(path));
+
+        if (mappingsEndingWith.length == 0) {
+            return '';
+        }
+
+        return this.mappings[mappingsEndingWith[0]];
     }
 
     /**
@@ -210,14 +243,3 @@ window.addEventListener('message', e => {
     }
 });
 
-// Hook into H5P.setSource to pass any elements being set to the replacer.
-// This is necessary since it seems some content types such as 360 degree image
-// use a canvas, which does not easily expose a way to query for <img> elements.
-// Using this we can let the replacer know of any elements that might need caching inside of the h5p.
-// regardless of if they are inside a canvas or not.
-const originalH5PSetSource = H5P.setSource;
-H5P.setSource = (element, src, contentId) => {
-    hvpLog('mod_hvp inside iframe: setSource called, adding element to list');
-    originalH5PSetSource(element, src, contentId);
-    replacer.addElementToConsider(element);
-}

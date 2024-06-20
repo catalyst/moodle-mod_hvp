@@ -96,17 +96,12 @@ elementReady('#' + window.hvp.selectors.iframe).then(async iframe => {
     hookelement.setAttribute('data-content-id', window.hvp.id); // This var is set by moodle.
     body.appendChild(hookelement);
 
-    // Inject script which contains all the cached hvp code.
-    var script = document.createElement('script');
-
-    // Add small debug log + the entire HVP js to this iframe.
-    script.textContent = "window.console.log('mod_hvp mobile: iframe loaded (this log is from inside iframe)');";
-    script.textContent += window.hvp.js; // This var is set in Moodle.
-    head.appendChild(script);
-
-    window.hvp.logger.log("Done injecting iframe with h5p contents. JS size: " + window.hvp.js?.length);
-    window.hvp.logger.log("Script tag injected: ");
-    window.hvp.logger.log(script);
+    // Inject script with the middleware js
+    // this must run before the hvp js runs, so it can accept
+    // the mappings from the parent window.
+    var middlewarescript = document.createElement('script');
+    middlewarescript.textContent = window.hvp.middlewarejs;
+    head.appendChild(middlewarescript);
 
     // Inject stylesheet.
     var stylesheet = document.createElement('style');
@@ -123,11 +118,50 @@ elementReady('#' + window.hvp.selectors.iframe).then(async iframe => {
     var completionManager = new HvpCompletionSyncHandler(iframe);
     completionManager.start();
 
+    // Wait for all the cached assets to cache before loading the h5p.
+    // this is very important, as some h5p content types call h5p methods
+    // such as h5p.getPath and expect an instant return, instead of async.
+    const loadInterval = setHVPInterval(iframe, () => {
+        if (!cachedAssetManager.isCachingFinished()) {
+            // Not done, ignore.
+            window.hvp.logger.log("Assets not cached yet, not injecting hvp js yet");
+            return;
+        }
+
+        clearInterval(loadInterval);
+
+        // Ensure the child window has received the updated mappings.
+        cachedAssetManager.notifyNewMappings();
+
+        // Inject hvp, it will play as if the page just had loaded.
+        injectHvpJs(head);
+    }, 250);
+
     // Put utility classes onto window for easy debugging.
     window.hvp.cached_asset_manager = cachedAssetManager;
     window.hvp.completion_manager = completionManager;
     window.hvp.resizer = resizer;
 });
+
+/**
+ * Inserts the h5p content type js into the element.
+ * This is generally done after all the assets have finished caching.
+ * @param {HTMLElement} Head element to add script tag to
+ */
+function injectHvpJs(head) {
+    // Inject script which contains all the cached hvp code.
+    var script = document.createElement('script');
+
+    // Add small debug log + the entire HVP js to this iframe.
+    script.textContent = "window.console.log('mod_hvp mobile: iframe loaded (this log is from inside iframe)');";
+    script.textContent += window.hvp.hvpjs;
+    script.textContent += window.hvp.overloadjs;
+    head.appendChild(script);
+
+    window.hvp.logger.log("Done injecting iframe with h5p contents. JS size: " + window.hvp.hvpjs?.length);
+    window.hvp.logger.log("Script tag injected: ");
+    window.hvp.logger.log(script);
+}
 
 /**
  * Logger for mod_hvp
@@ -402,7 +436,7 @@ class HvpCachedAssetManager {
      * @return {Boolean}
      */
     isCachingFinished = () => {
-        return Object.keys(this.mappings).length == this.filsUrlsToCache;
+        return Object.keys(this.mappings).length == this.fileUrlsToCache.length;
     }
 
     /**
@@ -454,7 +488,7 @@ class HvpCachedAssetManager {
      * Updates the loading notification based on if assets are loading or not
      */
     updateLoadingNotification = () => {
-        const isLoadingCachedAssets = this.isCachingFinished();
+        const isLoadingCachedAssets = !this.isCachingFinished();
         const areFontsUnmapped = this.getUnmappedFontNames().length > 0;
         const isLoading = isLoadingCachedAssets || areFontsUnmapped;
 
