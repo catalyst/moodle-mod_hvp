@@ -84,7 +84,7 @@ elementReady('#' + window.hvp.selectors.iframe).then(async iframe => {
     window.hvp.logger = logger;
 
     const resizer = new HvpResizeManager(iframe);
-    resizer.start(); // TODO put onto window obj
+    resizer.start();
 
     window.hvp.logger.log("setting up iframe - id " + iframe.id);
     var head = iframe.contentWindow.document.head;
@@ -123,9 +123,10 @@ elementReady('#' + window.hvp.selectors.iframe).then(async iframe => {
     var completionManager = new HvpCompletionSyncHandler(iframe);
     completionManager.start();
 
-    // Put onto window for easy debugging.
+    // Put utility classes onto window for easy debugging.
     window.hvp.cached_asset_manager = cachedAssetManager;
     window.hvp.completion_manager = completionManager;
+    window.hvp.resizer = resizer;
 });
 
 /**
