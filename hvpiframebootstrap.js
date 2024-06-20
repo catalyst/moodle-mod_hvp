@@ -37,7 +37,7 @@ var elementReady = (selector) => {
 function setHVPInterval(iframe, fn, delay) {
     var interval = setInterval(() => {
         if (!iframe.isConnected) {
-            window.hvp.logger.log("iframe isConnected changed to false indicating page unload, cancelling interval");
+            window.hvp.logger.log("iframe with id: " + iframe.id + " - isConnected changed to false indicating page unload, cancelling interval");
             clearInterval(interval);
             return;
         };
@@ -62,7 +62,7 @@ function setHVPWindowEventListener(iframe, eventname, fn) {
 
     var interval = setInterval(() => {
         if (!iframe.isConnected) {
-            window.hvp.logger.log("iframe isConnected changed to false indicating page unload, cancelling window event listener for " + eventname);
+            window.hvp.logger.log("iframe with id: " + iframe.id + " - isConnected changed to false indicating page unload, cancelling window event listener for " + eventname);
 
             // Abort controller, this will remove the event listener.
             controller.abort();
@@ -78,7 +78,7 @@ function setHVPWindowEventListener(iframe, eventname, fn) {
 const appCtx = this;
 window.hvp_app_ctx = appCtx;
 
-elementReady('#hvp-mobile-iframe').then(async iframe => {
+elementReady('#' + window.hvp.selectors.iframe).then(async iframe => {
     var logger = new HvpLogger(iframe, window.hvp.id);
     logger.start();
     window.hvp.logger = logger;
@@ -86,7 +86,7 @@ elementReady('#hvp-mobile-iframe').then(async iframe => {
     const resizer = new HvpResizeManager(iframe);
     resizer.start(); // TODO put onto window obj
 
-    window.hvp.logger.log("setting up iframe");
+    window.hvp.logger.log("setting up iframe - id " + iframe.id);
     var head = iframe.contentWindow.document.head;
     var body = iframe.contentWindow.document.body;
 
@@ -457,7 +457,7 @@ class HvpCachedAssetManager {
         const areFontsUnmapped = this.getUnmappedFontNames().length > 0;
         const isLoading = isLoadingCachedAssets || areFontsUnmapped;
 
-        var loadingbar = document.getElementById('h5p-loading-notification');
+        var loadingbar = document.getElementById(window.hvp.selectors.loadingnotification);
         loadingbar.style.display = isLoading ? 'block' : 'none';
     }
 
@@ -590,7 +590,7 @@ class HvpCompletionSyncHandler {
         HvpCompletionSyncHandler.log("Successfully registered mobile CRON handler to sync completions")
 
         // Start an interval that checks if completions are pending, and hides/unhides the notification for the user.
-        const completionnotification = document.getElementById('h5p-grade-sync-notification');
+        const completionnotification = document.getElementById(window.hvp.selectors.gradesyncnotification);
         setHVPInterval(this.iframe, async () => {
             const visible = await this.hasRecordsToSync(window.hvp.contextid);
             completionnotification.style.display = !visible ? 'none' : 'block';

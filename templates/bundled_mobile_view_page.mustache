@@ -1,14 +1,14 @@
 {{=<% %>=}}
 <div id="hvp-root" style="display: flex; padding-right: 5vw; flex-direction: column">
-    <ion-chip id="h5p-grade-sync-notification" color="warning" class="completioninfo chip ion-color-warning" style="margin-left: 16px; padding: 10px; font-size: 105%; display: none;"> 
+    <ion-chip id="<% selectors.gradesyncnotification %>" color="warning" class="completioninfo chip ion-color-warning" style="margin-left: 16px; padding: 10px; font-size: 105%; display: none;"> 
         <ion-icon name="alert-circle-outline"></ion-icon>
         {{ 'plugin.mod_hvp.mobilesyncpending' | translate }} 
     </ion-chip>
 
-    <ion-chip id="h5p-loading-notification" color="info" class="chip ion-color-info" style="margin-left: 16px; padding: 10px; font-size: 105%"> 
+    <ion-chip id="<% selectors.loadingnotification %>" color="info" class="chip ion-color-info" style="margin-left: 16px; padding: 10px; font-size: 105%"> 
         <ion-icon name="alert-circle-outline"></ion-icon>
         {{ 'plugin.mod_hvp.mobileloading' | translate }} 
     </ion-chip>
 
-    <iframe src="about:blank" id="hvp-mobile-iframe"></iframe>
+    <iframe src="about:blank" id="<% selectors.iframe %>"></iframe>
 </div>

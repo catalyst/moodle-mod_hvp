@@ -94,6 +94,9 @@ class bundled_mobile_handler {
         // Let the JS know what file maps to what font family.
         $fontfamilymap = array_map(fn($externalfile) => $externalfile['fileurl'], $fontmap);
 
+        // Generate a unique id to avoid race conditions from quick hvp->hvp page loads.
+        $uniqueid = uniqid();
+
         // Start building the main JS that will be cached by the app.
         $js = '';
 
@@ -107,6 +110,11 @@ class bundled_mobile_handler {
             'logdrainenabled' => self::is_log_drain_enabled(),
             'files' => $fileurls,
             'fontmap' => $fontfamilymap,
+            'selectors' => [
+                'iframe' => 'hvp-mobile-iframe-' . $uniqueid,
+                'gradesyncnotification' => 'hvp-grade-sync-notification-' . $uniqueid,
+                'loadingnotification' => 'hvp-loading-notification-' . $uniqueid, 
+            ]
         ];
         $js .= 'window.' . js_writer::set_variable('hvp', $jsdata, false);
 
@@ -120,6 +128,7 @@ class bundled_mobile_handler {
         // Note any arrays MUST be array_values, to make them ordered sequential keys, otherwise mustache explodes.
         $data = [];
         $data['h5pid'] = $this->cm->instance;
+        $data['selectors'] = $jsdata['selectors'];
 
         return [
             'templates'  => [
