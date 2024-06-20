@@ -294,12 +294,13 @@ class HvpResizeManager {
      * @type {HTMLElement}
      */
     iframe;
-    
+
     /**
-     * The root element, that encloses the iframe
-     * @type {HTMLElement}
+     * The diff of the last height change
+     * Used to detect and stop infinite height changing
+     * @type {Number}
      */
-    root;
+    lastHeightDiff = 0;
 
     /**
      * Construct manager
@@ -307,13 +308,15 @@ class HvpResizeManager {
      */
     constructor(iframe) {
         this.iframe = iframe;
-        this.root = document.getElementById('hvp-root');
     }
 
     /**
      * Starts height update interval
      */
     start = () => {
+        // Default height.
+        this.iframe.style.height = "100px";
+
         // Because the iframe can change heights as it loads,
         // (it generally starts quite small and gets much larger once images, etc.. load in)
         // we want to watch this over time, not just once at the start.
@@ -324,22 +327,29 @@ class HvpResizeManager {
      * Interval function. Does the height changing
      */
     onInterval = () => {
-        // Get the currently set height of the root element, or zero if not set.
-        const currentRootHeight = parseInt((this.root.style.height || "0px").replace("px", ""));
-
-        // Find the current height that the iframe content is (its scrollHeight).
-        const desiredHeight = this.iframe.contentWindow.document.body.scrollHeight;
+        const body = this.iframe.contentDocument.body;
         
-        // Change it if they are different.
-        if (currentRootHeight != desiredHeight) {
-            window.hvp.logger.log("Resize: setting height to " + desiredHeight);
-            this.root.style.height = desiredHeight + "px";
-        }
+        // Get the height of the body inside of the iframe.
+        // Make it appear slightly bigger than it actually is by adding a margin
+        // this helps account for small inconsistencies between height calculations.
+        const margin = 50;
+        const bodyHeight = body.getBoundingClientRect().height + margin;
 
-        // Note we do not usually care about width. Most content happy fits the width,
-        // but will tend to scroll as they like to expand their height.
-        // We want to avoid scrolling inside of the iframe, and have the scrolling done
-        // on the app instead.
+        // Get the height of the iframe itself.
+        const iframeHeight = this.iframe.getBoundingClientRect().height;
+
+        // Get the height difference, necessary to detect never ending height changes.
+        const heightDiff = Math.abs(iframeHeight - bodyHeight);
+
+        // Make the iframe taller if the body height is greater then the iframe i.e. to stop overflow.
+        // HOWEVER only do this if the difference between the last change is different.
+        // this stops never ending height changes with content types such as branching scenario which always
+        // will add on extra height to the iframe every time it changes.
+        if(bodyHeight > iframeHeight && heightDiff != this.lastHeightDiff) {
+            window.console.log("resizer: resized to " + bodyHeight);
+            this.iframe.style.height = bodyHeight + "px";
+            this.lastHeightDiff = heightDiff;
+        }
     }
 }
 
