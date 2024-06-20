@@ -37,7 +37,7 @@ var elementReady = (selector) => {
 function setHVPInterval(iframe, fn, delay) {
     var interval = setInterval(() => {
         if (!iframe.isConnected) {
-            window.HVP_LOGGER.log("iframe isConnected changed to false indicating page unload, cancelling interval");
+            window.hvp.logger.log("iframe isConnected changed to false indicating page unload, cancelling interval");
             clearInterval(interval);
             return;
         };
@@ -62,7 +62,7 @@ function setHVPWindowEventListener(iframe, eventname, fn) {
 
     var interval = setInterval(() => {
         if (!iframe.isConnected) {
-            window.HVP_LOGGER.log("iframe isConnected changed to false indicating page unload, cancelling window event listener for " + eventname);
+            window.hvp.logger.log("iframe isConnected changed to false indicating page unload, cancelling window event listener for " + eventname);
 
             // Abort controller, this will remove the event listener.
             controller.abort();
@@ -79,21 +79,21 @@ const appCtx = this;
 window.hvp_app_ctx = appCtx;
 
 elementReady('#hvp-mobile-iframe').then(async iframe => {
-    var logger = new HvpLogger(iframe, window.HVPID);
+    var logger = new HvpLogger(iframe, window.hvp.id);
     logger.start();
-    window.HVP_LOGGER = logger;
+    window.hvp.logger = logger;
 
     const resizer = new HvpResizeManager(iframe);
     resizer.start(); // TODO put onto window obj
 
-    window.HVP_LOGGER.log("setting up iframe");
+    window.hvp.logger.log("setting up iframe");
     var head = iframe.contentWindow.document.head;
     var body = iframe.contentWindow.document.body;
 
     // Add the element to hook into.
     var hookelement = document.createElement('div');
     hookelement.classList.add('h5p-content');
-    hookelement.setAttribute('data-content-id', window.HVPID); // This var is set by moodle.
+    hookelement.setAttribute('data-content-id', window.hvp.id); // This var is set by moodle.
     body.appendChild(hookelement);
 
     // Inject script which contains all the cached hvp code.
@@ -101,31 +101,31 @@ elementReady('#hvp-mobile-iframe').then(async iframe => {
 
     // Add small debug log + the entire HVP js to this iframe.
     script.textContent = "window.console.log('mod_hvp mobile: iframe loaded (this log is from inside iframe)');";
-    script.textContent += window.HVPJS; // This var is set in Moodle.
+    script.textContent += window.hvp.js; // This var is set in Moodle.
     head.appendChild(script);
 
-    window.HVP_LOGGER.log("Done injecting iframe with h5p contents. JS size: " + window.HVPJS?.length);
-    window.HVP_LOGGER.log("Script tag injected: ");
-    window.HVP_LOGGER.log(script);
+    window.hvp.logger.log("Done injecting iframe with h5p contents. JS size: " + window.hvp.js?.length);
+    window.hvp.logger.log("Script tag injected: ");
+    window.hvp.logger.log(script);
 
     // Inject stylesheet.
     var stylesheet = document.createElement('style');
-    stylesheet.textContent = window.HVPVIEWCSS;
+    stylesheet.textContent = window.hvp.css;
     head.appendChild(stylesheet);
 
-    window.HVP_LOGGER.log("Done injecting CSS. CSS length: " + window.HVPVIEWCSS?.length);
-    window.HVP_LOGGER.log("Style tag injected:");
-    window.HVP_LOGGER.log(stylesheet);
+    window.hvp.logger.log("Done injecting CSS. CSS length: " + window.hvp.css?.length);
+    window.hvp.logger.log("Style tag injected:");
+    window.hvp.logger.log(stylesheet);
 
-    var cachedAssetManager = new HvpCachedAssetManager(iframe, head, body, window.HVP_FILES || []);
+    var cachedAssetManager = new HvpCachedAssetManager(iframe, head, body, window.hvp.files || []);
     cachedAssetManager.start();
 
     var completionManager = new HvpCompletionSyncHandler(iframe);
     completionManager.start();
 
     // Put onto window for easy debugging.
-    window.HVP_CACHED_ASSET_MANAGER = cachedAssetManager;
-    window.HVP_COMPLETION_MANAGER = completionManager;
+    window.hvp.cached_asset_manager = cachedAssetManager;
+    window.hvp.completion_manager = completionManager;
 });
 
 /**
@@ -204,7 +204,7 @@ class HvpLogger {
             window.console.log(message);
         }
 
-        if (window.HVPLOGDRAINENABLED) {
+        if (window.hvp.logdrainenabled) {
             this.queue.push({
                 contextId: this.contextId,
                 message: this.convertToString(message),
@@ -297,7 +297,7 @@ class HvpResizeManager {
         
         // Change it if they are different.
         if (currentRootHeight != desiredHeight) {
-            window.HVP_LOGGER.log("Resize: setting height to " + desiredHeight);
+            window.hvp.logger.log("Resize: setting height to " + desiredHeight);
             this.root.style.height = desiredHeight + "px";
         }
 
@@ -375,7 +375,7 @@ class HvpCachedAssetManager {
      * Notes this operates on an interval and will continue until the iframe element goes away
      */
     start = () => {
-        window.HVP_LOGGER.log("Starting cache replacement manager interval");
+        window.hvp.logger.log("Starting cache replacement manager interval");
 
         // Create own style tag for font remappings.
         // This improves performance as finding and replacing in the entire css
@@ -409,7 +409,7 @@ class HvpCachedAssetManager {
      * @return {Array}
      */
     getUnmappedFontNames = () => {
-        const fontSrcMap = window.HVPFONTMAP || {};
+        const fontSrcMap = window.hvp.fontmap || {};
         return Object.keys(fontSrcMap).filter(fontName => !this.fontsMapped.includes(fontName));
     }
 
@@ -417,7 +417,7 @@ class HvpCachedAssetManager {
      * Checks for unmapped fonts that are cached, and maps them
      */
     checkAndUpdateFontMappings = () => {
-        const fontSrcMap = window.HVPFONTMAP || {};
+        const fontSrcMap = window.hvp.fontmap || {};
         // Find fonts not yet remapped to a cached src.
         const notMappedFontNames = this.getUnmappedFontNames();
 
@@ -428,7 +428,7 @@ class HvpCachedAssetManager {
 
             // Not mapped yet, ignore.
             if(!mappedSource) {
-                window.HVP_LOGGER.log("no remapped source for " + fontName + " available yet");
+                window.hvp.logger.log("no remapped source for " + fontName + " available yet");
                 return;
             }
             
@@ -445,7 +445,7 @@ class HvpCachedAssetManager {
             this.fontRemapStyle.textContent += cssToAdd;
             this.fontsMapped.push(fontName);
 
-            window.HVP_LOGGER.log("remapped font " + fontName + " to src " + mappedSource);
+            window.hvp.logger.log("remapped font " + fontName + " to src " + mappedSource);
         });
     }
 
@@ -487,8 +487,8 @@ class HvpCachedAssetManager {
         const cachedResults = results.filter(r => !r.cachedSrc.includes('tokenpluginfile.php'));
 
         if (cachedResults.length > 0) {
-            window.HVP_LOGGER.log(cachedResults.length + " new assets finished caching: ");
-            cachedResults.forEach(result => window.HVP_LOGGER.log("finished caching: " + result.originalSrc, ", cached source: " + result.cachedSrc));
+            window.hvp.logger.log(cachedResults.length + " new assets finished caching: ");
+            cachedResults.forEach(result => window.hvp.logger.log("finished caching: " + result.originalSrc, ", cached source: " + result.cachedSrc));
         }
 
         cachedResults.forEach(result => this.mappings[result.originalSrc] = result.cachedSrc);
@@ -592,7 +592,7 @@ class HvpCompletionSyncHandler {
         // Start an interval that checks if completions are pending, and hides/unhides the notification for the user.
         const completionnotification = document.getElementById('h5p-grade-sync-notification');
         setHVPInterval(this.iframe, async () => {
-            const visible = await this.hasRecordsToSync(window.HVPCONTEXTID);
+            const visible = await this.hasRecordsToSync(window.hvp.contextid);
             completionnotification.style.display = !visible ? 'none' : 'block';
         }, 1000);
 
@@ -643,7 +643,7 @@ class HvpCompletionSyncHandler {
         var db = appCtx.CoreSitesProvider.getCurrentSite().getDb();
         await db.insertRecord(HvpCompletionSyncHandler.DB_TABLE, {
             'id': window.crypto.randomUUID(),
-            'contextId': window.HVPCONTEXTID,
+            'contextId': window.hvp.contextid,
             'data': JSON.stringify(data),
         });
     }
@@ -665,11 +665,6 @@ class HvpCompletionSyncHandler {
         await Promise.all(records.map(r => HvpCompletionSyncHandler.syncRecord(r, this)));
 
         HvpCompletionSyncHandler.log("mod_hvp mobile completionsync: Done");
-        
-        // Update the sync notification (will show to user if sync failed).
-        if (window.HVPupdateFinishSyncNotification) {
-            window.HVPupdateFinishSyncNotification();
-        }
     }
 
     /**
@@ -728,8 +723,8 @@ class HvpCompletionSyncHandler {
      * @param {any} msg
      */
     static log = (msg) => {
-        if(window.HVP_LOGGER) {
-            window.HVP_LOGGER.log(msg);
+        if(window.hvp && window.hvp.logger) {
+            window.hvp.logger.log(msg);
         } else {
             window.console.log(msg);
         }

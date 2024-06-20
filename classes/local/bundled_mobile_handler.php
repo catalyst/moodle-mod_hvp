@@ -91,21 +91,24 @@ class bundled_mobile_handler {
         $files = array_values(array_merge($this->get_content_files(), $fontmap));
         $fileurls = array_map(fn($file) => $file['fileurl'], $files);
 
+        // Let the JS know what file maps to what font family.
+        $fontfamilymap = array_map(fn($externalfile) => $externalfile['fileurl'], $fontmap);
+
         // Start building the main JS that will be cached by the app.
         $js = '';
 
         // Set various variables required by the offline bootstrapper.
         // Put these on the window so it's easier to debug/inspect.
-        $js .= 'window.' . js_writer::set_variable('HVPJS', $hvpjs, false);
-        $js .= 'window.' . js_writer::set_variable('HVPID', $this->cm->instance, false);
-        $js .= 'window.' . js_writer::set_variable('HVPVIEWCSS', $hvpcss, false);
-        $js .= 'window.' . js_writer::set_variable('HVPCONTEXTID', $this->context->id, false);
-        $js .= 'window.' . js_writer::set_variable('HVPLOGDRAINENABLED', self::is_log_drain_enabled(), false);
-        $js .= 'window.' . js_writer::set_variable('HVP_FILES', $fileurls, false);
-
-        // Let the JS know what file maps to what font family.
-        $fontfamilymap = array_map(fn($externalfile) => $externalfile['fileurl'], $fontmap);
-        $js .= 'window.' . js_writer::set_variable('HVPFONTMAP', $fontfamilymap, false);
+        $jsdata = [
+            'js' => $hvpjs,
+            'id' => $this->cm->instance,
+            'css' => $hvpcss,
+            'contextid' => $this->context->id,
+            'logdrainenabled' => self::is_log_drain_enabled(),
+            'files' => $fileurls,
+            'fontmap' => $fontfamilymap,
+        ];
+        $js .= 'window.' . js_writer::set_variable('hvp', $jsdata, false);
 
         // Add MutationObserver polyfill for mobile (mobile doesn't support it, but browser simulator does).
         $js .= file_get_contents($CFG->dirroot . '/mod/hvp/MutationObserver.js');
