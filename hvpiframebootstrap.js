@@ -116,7 +116,6 @@ elementReady('#' + window.hvp.selectors.iframe).then(async iframe => {
     cachedAssetManager.start();
 
     var completionManager = new HvpCompletionSyncHandler(iframe);
-    completionManager.start();
 
     // Wait for all the cached assets to cache before loading the h5p.
     // this is very important, as some h5p content types call h5p methods
@@ -135,6 +134,10 @@ elementReady('#' + window.hvp.selectors.iframe).then(async iframe => {
 
         // Inject hvp, it will play as if the page just had loaded.
         injectHvpJs(head);
+
+        // Start completion manager only after injecting, otherwise
+        // the H5P global object is not accessible.
+        completionManager.start();
     }, 250);
 
     // Put utility classes onto window for easy debugging.
