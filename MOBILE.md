@@ -39,6 +39,7 @@ Note the mobile app caches the activity. This means changes to the activity (e.g
 | Cached images | 🆗 Mostly supported | Images in CSS that are not directly on an elements style attribute are not cached |
 | Cached fonts and icons | 🆗 Mostly supported | Only `.ttf` is supported, as other fonts are not compatible on IOS. Note the default font differs between operating system (e.g. Roboto on Android, and SF Pro on IOS) |
 | Fullscreen | ❌ Not supported | The app has no nice way to exit fullscreen (since there is no physical keyboard), so all H5Ps have fullscreen mode disabled |
+| Microphone | ❌ Not supported | Mobile microphone access requires a different set of APIs than H5Ps are built with, so microphone access is unlikely to work. |
 
 | Content type | Support Level | Notes |
 | ------- | ------------- | ----- |
@@ -49,6 +50,7 @@ Note the mobile app caches the activity. This means changes to the activity (e.g
 | Image slider | ✅ Supported |
 | Image hotspots | ✅ Supported | < `1.10.7` is not supported due to issues with fullscreen being disabled |
 | Document export | ❌ Not supported | |
+| Speak the words | ❌ Not supported | Microphone access not supported |
 
 Most content types should work, but after testing they should be listed here as either supported, or unsupported.
 
@@ -86,3 +88,6 @@ You can get the mobile app using the bundled method to forward javascript logs b
 
 ### CRON handler
 Any changes to the mobile (not web) CRON handler require the user to log out and back in again.
+
+### Unique ids
+Whenever querying elements inside of the template, always use a unique identifier. This avoid a race condition where the previous activities javascript may still be running while the new activity loads, causing it to behave unexpectedly.
