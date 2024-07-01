@@ -83,8 +83,11 @@ elementReady('#' + window.hvp.selectors.iframe).then(async iframe => {
     logger.start();
     window.hvp.logger = logger;
 
-    const resizer = new HvpResizeManager(iframe);
-    resizer.start();
+    // Do not read the height of the content to get the height, instead set a fixed height.
+    // This is mainly due to content types such as branching scenario which will always make
+    // their height a little bit more than the iframe height, causing an endless increase.
+    iframe.style.height = "1000px";
+    iframe.style.overflow = 'visible';
 
     window.hvp.logger.log("setting up iframe - id " + iframe.id);
     var head = iframe.contentWindow.document.head;
@@ -143,7 +146,6 @@ elementReady('#' + window.hvp.selectors.iframe).then(async iframe => {
     // Put utility classes onto window for easy debugging.
     window.hvp.cached_asset_manager = cachedAssetManager;
     window.hvp.completion_manager = completionManager;
-    window.hvp.resizer = resizer;
 });
 
 /**
@@ -284,74 +286,6 @@ class HvpLogger {
             this.queue = [];
         } catch (ex) {
             window.console.log("error sending logs to site");
-        }
-    }
-}
-
-/**
- * Manages vertical height resizing
- */
-class HvpResizeManager {
-    /**
-     * The iframe to watch to calculate height
-     * @type {HTMLElement}
-     */
-    iframe;
-
-    /**
-     * The diff of the last height change
-     * Used to detect and stop infinite height changing
-     * @type {Number}
-     */
-    lastHeightDiff = 0;
-
-    /**
-     * Construct manager
-     * @param {HTMlElement} iframe to watch height for
-     */
-    constructor(iframe) {
-        this.iframe = iframe;
-    }
-
-    /**
-     * Starts height update interval
-     */
-    start = () => {
-        // Default height.
-        this.iframe.style.height = "100px";
-
-        // Because the iframe can change heights as it loads,
-        // (it generally starts quite small and gets much larger once images, etc.. load in)
-        // we want to watch this over time, not just once at the start.
-        setHVPInterval(this.iframe, this.onInterval, 1000);
-    }
-
-    /**
-     * Interval function. Does the height changing
-     */
-    onInterval = () => {
-        const body = this.iframe.contentDocument.body;
-        
-        // Get the height of the body inside of the iframe.
-        // Make it appear slightly bigger than it actually is by adding a margin
-        // this helps account for small inconsistencies between height calculations.
-        const margin = 50;
-        const bodyHeight = body.getBoundingClientRect().height + margin;
-
-        // Get the height of the iframe itself.
-        const iframeHeight = this.iframe.getBoundingClientRect().height;
-
-        // Get the height difference, necessary to detect never ending height changes.
-        const heightDiff = Math.abs(iframeHeight - bodyHeight);
-
-        // Make the iframe taller if the body height is greater then the iframe i.e. to stop overflow.
-        // HOWEVER only do this if the difference between the last change is different.
-        // this stops never ending height changes with content types such as branching scenario which always
-        // will add on extra height to the iframe every time it changes.
-        if(bodyHeight > iframeHeight && heightDiff != this.lastHeightDiff) {
-            window.console.log("resizer: resized to " + bodyHeight);
-            this.iframe.style.height = bodyHeight + "px";
-            this.lastHeightDiff = heightDiff;
         }
     }
 }
