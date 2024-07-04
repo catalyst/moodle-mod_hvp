@@ -83,11 +83,13 @@ elementReady('#' + window.hvp.selectors.iframe).then(async iframe => {
     logger.start();
     window.hvp.logger = logger;
 
-    // Do not read the height of the content to get the height, instead set a fixed height.
-    // This is mainly due to content types such as branching scenario which will always make
-    // their height a little bit more than the iframe height, causing an endless increase.
-    iframe.style.height = "1000px";
-    iframe.style.overflow = 'visible';
+    // Load the hvp core js first OUTSIDE the iframe.
+    // This will set up necessary event handlers, etc...
+    // Note it does NOT include the content type js.
+    eval(window.hvp.corejs);
+
+    // Set a reasonable initial height.
+    iframe.style.height = "400px";
 
     window.hvp.logger.log("setting up iframe - id " + iframe.id);
     var head = iframe.contentWindow.document.head;
@@ -279,11 +281,14 @@ class HvpLogger {
             return;
         }
 
-        window.console.log("sending logs to site");
+        // Make a deep copy of the queue. This reduces the chance of a race condition on the queue variable.
+        const tempQueue = JSON.parse(JSON.stringify(this.queue));
+        this.queue = [];
+
+        window.console.log("sending logs to site " + tempQueue.length);
 
         try {
-            await this.site.write("mod_hvp_log_drain", { logs: this.queue });
-            this.queue = [];
+            await this.site.write("mod_hvp_log_drain", { logs: tempQueue });
         } catch (ex) {
             window.console.log("error sending logs to site");
         }

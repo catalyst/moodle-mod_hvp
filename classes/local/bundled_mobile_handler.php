@@ -82,6 +82,9 @@ class bundled_mobile_handler {
         $hvpjs = $this->get_core_h5p_js();
         $hvpjs .= $this->get_view_js($view);
 
+        $corejs = $this->get_h5p_integration_var($view);
+        $corejs .= $this->get_core_h5p_js();
+
         $middlewarejs = $this->get_middleware_js();
         $overloadjs = $this->get_overload_js();
 
@@ -105,6 +108,7 @@ class bundled_mobile_handler {
         // Set various variables required by the offline bootstrapper.
         // Put these on the window so it's easier to debug/inspect.
         $jsdata = [
+            'corejs' => $corejs,
             'middlewarejs' => $middlewarejs,
             'hvpjs' => $hvpjs,
             'overloadjs' => $overloadjs,
@@ -168,7 +172,7 @@ class bundled_mobile_handler {
     }
 
     /**
-     * Returns a string which contians jquery as well as the h5p core javascript.
+     * Returns a string which contains jquery as well as the h5p core javascript.
      * @return string
      */
     private function get_core_h5p_js(): string {
@@ -256,6 +260,18 @@ class bundled_mobile_handler {
             }
         ";
 
+        // This is a hack/fix for images within a branching scenario activity on IOS.
+        // For some reason, the height: 100% of the img on ios fights the resizer and
+        // causes the image to expand height infinitely, distorting the image in the process.
+        // Setting a max-height appears to fix it.
+        $rawcss .= "
+            img {
+                max-width: 100%;
+                max-height: 100%;
+                height: inherit !important;
+            }
+        ";
+
         return $rawcss;
     }
 
@@ -292,13 +308,11 @@ class bundled_mobile_handler {
     }
 
     /**
-     * Returns the entire JS for the given view.
-     * @param view_assets $view
-     * @return string
+     * Returns the H5PIntegration js var value for the given view
+     * @param view_assets $view H5P view object
+     * @return string JS script to set the variabe value
      */
-    private function get_view_js(view_assets $view): string {
-        $viewjs = '';
-
+    private function get_h5p_integration_var(view_assets $view): string {
         // H5P integration is just the view settings as a JS variable, the H5P JS can access it.
         // https://github.com/catalyst/moodle-mod_hvp/blob/bc6f5ea3ddf9de2dd993e9f47995c73dbf80091e/classes/view_assets.php#L318.
         $h5pintegration = (object) $view->settings;
@@ -306,7 +320,25 @@ class bundled_mobile_handler {
         // Disable fullscreen - mobile does not support it (no way to exit).
         $h5pintegration->fullscreenDisabled = true;
 
-        $viewjs .= js_writer::set_variable('H5PIntegration', $h5pintegration);
+        return js_writer::set_variable('H5PIntegration', $h5pintegration);
+    }
+
+    /**
+     * Returns the entire JS for the given view.
+     * @param view_assets $view
+     * @return string
+     */
+    private function get_view_js(view_assets $view): string {
+        $viewjs = '';
+
+        $viewjs .= $this->get_h5p_integration_var($view);
+
+        // ExternaEmbed must be set to false, so the resizer and other scripts can activate
+        // (they do not normally activate when externally embedding, since they require cross frame scripting).
+        $viewjs .= '
+        var H5P = H5P || {};
+        H5P.externalEmbed = false;
+        ';
 
         $files = $view->getdependencyfiles();
         $scriptpaths = array_column($files['scripts'], 'path');
