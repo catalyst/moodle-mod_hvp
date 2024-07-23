@@ -23,7 +23,11 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+<<<<<<< HEAD
 $plugin->version   = 2026062500;
+=======
+$plugin->version   = 2023122503;
+>>>>>>> 0b5552c (feat: Add support for downloadable H5P via Mobile app (#56))
 $plugin->requires  = 2013051403;
 $plugin->cron      = 0;
 $plugin->component = 'mod_hvp';
