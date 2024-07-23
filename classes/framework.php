@@ -24,6 +24,8 @@
 
 namespace mod_hvp;
 
+use mod_hvp\output\mobile;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
@@ -1147,6 +1149,7 @@ class framework implements \H5PFrameworkInterface {
             'filtered' => '',
             'disable' => $content['disable'],
             'timemodified' => time(),
+            'mobilerendermethod' => $content['mobilerendermethod'] ?? mobile::RENDER_METHOD_UNSET,
         ));
 
         if (isset($content[ 'completionpass'])) {

@@ -106,17 +106,22 @@ function hvp_get_core_assets($context) {
     $settings['loadedJs'] = array();
     $settings['loadedCss'] = array();
 
-    // Add core stylesheets.
-    foreach (\H5PCore::$styles as $style) {
-        $url = generate_css_url('library/' . $style);
-        $settings['core']['styles'][] = $url->out(false);
-        $PAGE->requires->css($url);
-    }
-    // Add core JavaScript.
-    foreach (\H5PCore::$scripts as $script) {
-        $scriptpath = '/mod/hvp/library/' . $script;
-        $settings['core']['scripts'][] = generate_js_url($scriptpath)->out(false);
-        $PAGE->requires->js($scriptpath, true);
+    // Do not use $PAGE->requires when viewing via mobile (aka a webservice).
+    global $ME;
+
+    if (strpos($ME, 'webservice') == false) {
+        // Add core stylesheets.
+        foreach (\H5PCore::$styles as $style) {
+            $url = generate_css_url('library/' . $style);
+            $settings['core']['styles'][] = $url->out(false);
+            $PAGE->requires->css($url);
+        }
+        // Add core JavaScript.
+        foreach (\H5PCore::$scripts as $script) {
+            $scriptpath = '/mod/hvp/library/' . $script;
+            $settings['core']['scripts'][] = generate_js_url($scriptpath)->out(false);
+            $PAGE->requires->js($scriptpath, true);
+        }
     }
 
     return $settings;
