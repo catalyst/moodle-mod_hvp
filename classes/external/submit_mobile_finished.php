@@ -16,7 +16,15 @@
 
 namespace mod_hvp\external;
 
+defined('MOODLE_INTERNAL') || die();
+require_once($CFG->dirroot . '/lib/externallib.php');
+
+// Note - context -> \core\context in 4.2+ due to MDL-74936. However, it is aliased so keep it this way
+// to maintain 4.0+ compatibility.
 use context;
+
+// Note - external API has moved to namespaced classes in 4.2+ due to MDL-76583. Including externallib.php file
+// aliases the classes to maintain compatibility with 4.0+.
 use external_api;
 use external_function_parameters;
 use external_single_structure;
