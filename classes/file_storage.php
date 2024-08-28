@@ -544,7 +544,7 @@ class file_storage implements \H5PFileStorage {
         if (empty($archive) && $exportzip) {
             $archive = new \ZipArchive();
             $path = tempnam(get_request_storage_directory(),'libdir');
-            $archive->open($path, \ZipArchive::CREATE || \ZipArchive::OVERWRITE);
+            $archive->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
             // Set recursion flag.
             $top = true;
         } else {
