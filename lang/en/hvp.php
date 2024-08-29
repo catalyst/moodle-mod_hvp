@@ -675,3 +675,16 @@ $string['mobileapp:settings:mobiledebugging'] = 'Mobile app debugging';
 $string['mobileapp:settings:mobiledebugging_help'] = 'For the bundled mobile render method only. A comma separated list of user ids who should have their hvp mobile javascript logs send back to error_log. Note users entered here will not see any visible difference. Ensure the user has purged the apps cache if this was recently enabled for them.';
 $string['mobileoptions'] = 'Mobile app options';
 
+// Update all libraries.
+$string['updatealllibraries'] = 'Update libraries';
+$string['updatealllibrariesconfirm'] = 'Do you wish to update all libraries (exluding restricted libraries)?';
+
+// Upgrade all content.
+$string['upgradebulkcontent'] = 'Upgrade all content';
+$string['upgradebulkcontentconfirm'] = 'Do you wish to upgrade all content to their latest libraries?';
+$string['upgradebulkinprogress'] = 'Upgrading {$a->from} to {$a->to}...';
+$string['upgradebulkdone'] = 'You have successfully upgraded {$a->count} content instance(s) for {$a->from}.';
+
+// Export libraries.
+$string['exportlibraries'] = 'Export libraries';
+$string['exportlibrarieserror'] = 'An error occured while export the libraries.';

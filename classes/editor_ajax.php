@@ -65,7 +65,8 @@ class editor_ajax implements \H5PEditorAjaxInterface {
 
         return $DB->get_records_sql("
             SELECT hl4.id, hl4.machine_name, hl4.title, hl4.major_version,
-                hl4.minor_version, hl4.patch_version, hl4.has_icon, hl4.restricted
+                hl4.minor_version, hl4.patch_version, hl4.has_icon, hl4.restricted,
+                0 AS patch_version_in_folder_name
             FROM {hvp_libraries} hl4
             JOIN ({$maxminorversionsql}) hl3
             ON hl4.machine_name = hl3.machine_name
