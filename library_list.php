@@ -40,6 +40,7 @@ $PAGE->set_title("{$SITE->shortname}: " . get_string('libraries', 'hvp'));
 $uploadform = new \mod_hvp\upload_libraries_form();
 if ($formdata = $uploadform->get_data()) {
     // Handle submitted valid form.
+    \core_php_time_limit::raise();
     $h5pstorage = \mod_hvp\framework::instance('storage');
     $h5pstorage->savePackage(null, null, true);
 }
