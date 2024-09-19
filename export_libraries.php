@@ -29,6 +29,8 @@ require_once('locallib.php');
 
 admin_externalpage_setup('h5plibraries');
 
+\core_php_time_limit::raise();
+
 $COURSE = $SITE;
 
 $interface = mod_hvp\framework::instance('interface');
