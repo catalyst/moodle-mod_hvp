@@ -109,7 +109,7 @@ function hvp_get_core_assets($context) {
     // Do not use $PAGE->requires when viewing via mobile (aka a webservice).
     global $ME;
 
-    if (strpos($ME, 'webservice') == false) {
+    if (strpos($ME ?? '', 'webservice') == false) {
         // Add core stylesheets.
         foreach (\H5PCore::$styles as $style) {
             $url = generate_css_url('library/' . $style);
