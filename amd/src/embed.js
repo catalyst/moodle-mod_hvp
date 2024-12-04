@@ -22,10 +22,14 @@ define(['jquery', 'mod_hvp/communicator'], function($, H5PEmbedCommunicator) {
                 var resizeDelay;
                 var instance = H5P.instances[0];
                 var parentIsFriendly = false;
-                var completionactivity = document.getElementsByClassName('activity-header')[0];
-                var comnpletionmargin = document.defaultView.getComputedStyle(completionactivity, '')
-                    .getPropertyValue('margin-bottom');
-                var completionheight = completionactivity.scrollHeight + parseInt(comnpletionmargin, 10); // We want the first element.
+                var completionheight = 0;
+                if (globalThis.completion) {
+                    var completionactivity = document.getElementsByClassName('activity-header')[0];
+                    var completionmargin = document.defaultView.getComputedStyle(completionactivity, '')
+                        .getPropertyValue('margin-bottom');
+                    completionheight = completionactivity.scrollHeight + parseInt(completionmargin, 10); // We want the first element.
+                }
+
                 // Handle that the resizer is loaded after the iframe.
                 H5PEmbedCommunicator.on('ready', function() {
                     H5PEmbedCommunicator.send('hello');
