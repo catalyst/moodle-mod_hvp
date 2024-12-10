@@ -29,4 +29,4 @@ $plugin->cron      = 0;
 $plugin->component = 'mod_hvp';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->release   = '1.28.2';
-$plugin->supported = [400, 404];
+$plugin->supported = [401, 404];
