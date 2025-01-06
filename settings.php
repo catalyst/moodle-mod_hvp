@@ -21,6 +21,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use mod_hvp\output\mobile;
+
 // Make sure we are called from an internal Moodle site.
 defined('MOODLE_INTERNAL') || die();
 
@@ -154,6 +156,28 @@ if ($ADMIN->fulltree) {
         new admin_setting_configcheckbox('mod_hvp/enable_pluginfile_proxy',
                 get_string('enable_pluginfile_proxy', 'hvp'),
                 get_string('enable_pluginfile_proxy_help', 'hvp'), 1));
+    // Mobile app.
+    $settings->add(new admin_setting_heading(
+        'mod_hvp/mobileapp',
+        get_string('mobileapp:settings:heading', 'hvp'),
+        ''
+    ));
+
+    $settings->add(new admin_setting_configselect('mod_hvp/mobilehandler',
+        get_string('mobileapp:settings:mobilehandler', 'hvp'),
+        get_string('mobileapp:settings:mobilehandler_help', 'hvp'),
+        mobile::RENDER_METHOD_WEB_IFRAME,
+        [
+            mobile::RENDER_METHOD_WEB_IFRAME => get_string('mobile:rendermethod:webiframe', 'hvp'),
+            mobile::RENDER_METHOD_BUNDLED => get_string('mobile:rendermethod:bundled', 'hvp'),
+        ]
+    ));
+
+    $settings->add(new admin_setting_configtext('mod_hvp/mobiledebugging',
+        get_string('mobileapp:settings:mobiledebugging', 'hvp'),
+        get_string('mobileapp:settings:mobiledebugging_help', 'hvp'),
+        ''
+    ));
 
     // Load js for disable hub confirmation dialog functionality.
     $PAGE->requires->js('/mod/hvp/library/js/jquery.js', true);

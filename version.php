@@ -23,9 +23,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2024091200;
+$plugin->version   = 2024112100;
 $plugin->requires  = 2013051403;
 $plugin->cron      = 0;
 $plugin->component = 'mod_hvp';
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '1.27.0';
+$plugin->supported = [400, 404];
+$plugin->release   = '1.27.1';

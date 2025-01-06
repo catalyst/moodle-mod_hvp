@@ -106,17 +106,22 @@ function hvp_get_core_assets($context) {
     $settings['loadedJs'] = array();
     $settings['loadedCss'] = array();
 
-    // Add core stylesheets.
-    foreach (\H5PCore::$styles as $style) {
-        $url = generate_css_url('library/' . $style);
-        $settings['core']['styles'][] = $url->out(false);
-        $PAGE->requires->css($url);
-    }
-    // Add core JavaScript.
-    foreach (\H5PCore::$scripts as $script) {
-        $scriptpath = '/mod/hvp/library/' . $script;
-        $settings['core']['scripts'][] = generate_js_url($scriptpath)->out(false);
-        $PAGE->requires->js($scriptpath, true);
+    // Do not use $PAGE->requires when viewing via mobile (aka a webservice).
+    global $ME;
+
+    if (strpos($ME ?? '', 'webservice') == false) {
+        // Add core stylesheets.
+        foreach (\H5PCore::$styles as $style) {
+            $url = generate_css_url('library/' . $style);
+            $settings['core']['styles'][] = $url->out(false);
+            $PAGE->requires->css($url);
+        }
+        // Add core JavaScript.
+        foreach (\H5PCore::$scripts as $script) {
+            $scriptpath = '/mod/hvp/library/' . $script;
+            $settings['core']['scripts'][] = generate_js_url($scriptpath)->out(false);
+            $PAGE->requires->js($scriptpath, true);
+        }
     }
 
     return $settings;
@@ -610,7 +615,7 @@ function hvp_send_notification_messages($course, $hvp, $attempt, $context, $cm) 
     // Check for notifications required.
     $notifyfields = 'u.id, u.username, u.idnumber, u.email, u.emailstop, u.lang,
             u.timezone, u.mailformat, u.maildisplay, u.auth, u.suspended, u.deleted, ';
-    $notifyfields .= get_all_user_name_fields(true, 'u');
+    $notifyfields .= 'u.' . implode(', u.', \core_user\fields::get_name_fields());
     $groups       = groups_get_all_groups($course->id, $submitter->id, $cm->groupingid);
     if (is_array($groups) && count($groups) > 0) {
         $groups = array_keys($groups);

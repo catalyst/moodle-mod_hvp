@@ -41,7 +41,7 @@ class view_assets {
     private $jsrequires;
     private $cssrequires;
 
-    protected $settings;
+    public $settings;
     protected $embedtype;
     protected $files;
 
@@ -197,7 +197,7 @@ class view_assets {
      *
      * @return array Files that the view has dependencies to
      */
-    private function getdependencyfiles() {
+    public function getdependencyfiles() {
         global $PAGE;
 
         $preloadeddeps = $this->core->loadContentDependencies($this->content['id'], 'preloaded');

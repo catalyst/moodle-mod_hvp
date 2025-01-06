@@ -99,6 +99,7 @@ define(['jquery', 'mod_hvp/communicator'], function($, H5PEmbedCommunicator) {
             }
         });
     });
+
     return  /** @alias module:mod_hvp/embed */ {
         /**
          * Initialise embed instance.

@@ -1,0 +1,16 @@
+{{=<% %>=}}
+<div style="display: flex; padding-right: 5vw; flex-direction: column">
+    <ion-chip id="<% selectors.gradesyncnotification %>" color="warning" class="completioninfo chip ion-color-warning" style="margin-left: 16px; padding: 10px; font-size: 105%; display: none;"> 
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        {{ 'plugin.mod_hvp.mobilesyncpending' | translate }} 
+    </ion-chip>
+
+    <ion-chip id="<% selectors.loadingnotification %>" color="info" class="chip ion-color-info" style="margin-left: 16px; padding: 10px; font-size: 105%"> 
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        {{ 'plugin.mod_hvp.mobileloading' | translate }} 
+    </ion-chip>
+
+    <div style="height: auto; width: auto;">
+        <iframe src="about:blank" style="width: 10px; overflow: hidden; min-width: 100%; min-height: 300px; border: 0; box-sizing: border-box" id="<% selectors.iframe %>"></iframe>
+    </div>
+</div>

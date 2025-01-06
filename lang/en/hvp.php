@@ -488,6 +488,7 @@ $string['emailconfirmsubject'] = 'Submission confirmation: {$a->hvpname}';
 $string['completionpass'] = 'Require passing grade';
 $string['completionpassdesc'] = 'Student must achieve a passing grade to complete this activity';
 $string['completionpass_help'] = 'If enabled, this activity is considered complete when the student receives a pass grade (as specified in the Grade section of the H5P activity settings) or higher.';
+$string['completiondetail:completionpass'] = 'Receive a pass grade';
 $string['gradetopassnotset'] = 'This H5P activity does not yet have a grade to pass set. It may be set in the Grade section of the H5P activity settings.';
 $string['gradetopassmustbeset'] = 'Grade to pass cannot be zero as this H5P activity has its completion method set to require passing grade. Please set a non-zero value.';
 $string['gradeheading'] = 'Results for {$a}';
@@ -661,3 +662,31 @@ $string['query:help'] = "<p>Script to uninstall h5p libraries. Provide either an
 <p>    # /remove_library.php?title=Test Library&version=1.0.0&run=true</
 <p>        Remove library with name of 'Test Library 1.0.0' and any associated activities</p>
 ";
+
+$string['mobileapp:settings:heading'] = 'Mobile app';
+$string['mobileapp:settings:mobilehandler'] = 'Mobile rendering handler';
+$string['mobileapp:settings:mobilehandler_help'] = 'This changes the default for course modules to the bundled mobile handler. Course modules can overwrite this in their settings.The bundled mobile handler has better support for offline functionality, but is more prone to errors. Use the web iframe handler for the best compatibility. See MOBILE.md in the plugin code for more information about this feature.';
+$string['mobilesyncpending'] = "You have completed this H5P, but the completion has not been synchronised yet.";
+$string['mobileloading'] = "H5P assets are still loading. You may notice some broken content until it finishes loading.";
+$string['mobile:rendermethod:webiframe'] = 'Web iframe render method';
+$string['mobile:rendermethod:bundled'] = 'Bundled render method';
+$string['mobile:rendermethod:unset'] = 'Use site default';
+$string['mobilerendermethod'] = 'Mobile app rendering method';
+$string['mobilerendermethod_help'] = 'Sets the render method for this activity only. If uset, uses the value set in the site wide plugin configuration. Do not change this setting if you do not know what it does. See the plugin documentation for more information.';
+$string['mobileapp:settings:mobiledebugging'] = 'Mobile app debugging';
+$string['mobileapp:settings:mobiledebugging_help'] = 'For the bundled mobile render method only. A comma separated list of user ids who should have their hvp mobile javascript logs send back to error_log. Note users entered here will not see any visible difference. Ensure the user has purged the apps cache if this was recently enabled for them.';
+$string['mobileoptions'] = 'Mobile app options';
+
+// Update all libraries.
+$string['updatealllibraries'] = 'Update libraries';
+$string['updatealllibrariesconfirm'] = 'Do you wish to update all libraries (exluding restricted libraries)?';
+
+// Upgrade all content.
+$string['upgradebulkcontent'] = 'Upgrade all content';
+$string['upgradebulkcontentconfirm'] = 'Do you wish to upgrade all content to their latest libraries?';
+$string['upgradebulkinprogress'] = 'Upgrading {$a->from} to {$a->to}...';
+$string['upgradebulkdone'] = 'You have successfully upgraded {$a->count} content instance(s) for {$a->from}.';
+
+// Export libraries.
+$string['exportlibraries'] = 'Export libraries';
+$string['exportlibrarieserror'] = 'An error occured while export the libraries.';
