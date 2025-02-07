@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace mod_hvp\tests;
+namespace mod_hvp;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -42,7 +42,7 @@ class assets_test extends \advanced_testcase {
     /**
      * Tests getting hvp core assets with various wwwroots
      *
-     * @covers hvp_get_core_assets
+     * @covers \hvp_get_core_assets
      */
     public function test_hvp_get_core_assets() {
         global $CFG;

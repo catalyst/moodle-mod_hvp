@@ -70,7 +70,7 @@ class mobile {
         $method = (int) $DB->get_field('hvp', 'mobilerendermethod', ['id' => $cm->instance]);;
 
         // Unset, use site config to pick one.
-        if($method == self::RENDER_METHOD_UNSET) {
+        if ($method == self::RENDER_METHOD_UNSET) {
             $method = self::get_site_default_handler();
         }
 

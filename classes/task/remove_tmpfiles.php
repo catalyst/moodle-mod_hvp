@@ -23,8 +23,6 @@
 
 namespace mod_hvp\task;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The mod_hvp look for updates task class
  *

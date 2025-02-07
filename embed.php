@@ -42,11 +42,11 @@ if (\mod_hvp\mobile_auth::has_valid_token($userid, $secret)) {
 // Verify course context.
 $cm = get_coursemodule_from_id('hvp', $id);
 if (!$cm) {
-    print_error('invalidcoursemodule');
+    throw new moodle_exception('invalidcoursemodule');
 }
 $course = $DB->get_record('course', array('id' => $cm->course));
 if (!$course) {
-    print_error('coursemisconf');
+    throw new moodle_exception('coursemisconf');
 }
 
 try {
@@ -98,7 +98,7 @@ $PAGE->set_url(new \moodle_url('/mod/hvp/embed.php', array('id' => $id)));
 $PAGE->set_title(format_string($content['title']));
 $PAGE->set_heading($course->fullname);
 
-// Disable activity header on Moodle 4.0+
+// Disable activity header on Moodle 4.0+.
 if ($CFG->branch >= 400) {
     $PAGE->activityheader->disable();
 }

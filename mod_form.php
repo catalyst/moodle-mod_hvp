@@ -115,8 +115,8 @@ class mod_hvp_mod_form extends moodleform_mod {
             mobile::RENDER_METHOD_UNSET => get_string('mobile:rendermethod:unset', 'hvp'),
         ];
         $mform->addElement('select', 'mobilerendermethod', get_string('mobilerendermethod', 'hvp'), $mobilerendermethods);
-        $mform->addHelpButton('mobilerendermethod', 'mobilerendermethod', 'hvp'); 
-        
+        $mform->addHelpButton('mobilerendermethod', 'mobilerendermethod', 'hvp');
+
         $mform->setType('mobilerendermethod', PARAM_INT);
         $mform->setDefault('mobilerendermethod', mobile::RENDER_METHOD_UNSET);
 
@@ -128,7 +128,6 @@ class mod_hvp_mod_form extends moodleform_mod {
         $mform->addElement('text', 'maximumgrade', get_string('maximumgrade', 'hvp'));
         $mform->setType('maximumgrade', PARAM_INT);
         $mform->setDefault('maximumgrade', 10);
-
 
         // Standard course module settings.
         $this->standard_coursemodule_elements();

@@ -60,9 +60,10 @@ class log_drain extends external_api {
         global $USER;
 
         // Just dump this directly to error_log.
-        foreach($logs as $log) {
+        foreach ($logs as $log) {
             $log = (object) $log;
-            error_log("mod_hvp mobile javascript log: User: " . $USER->id . " Context: " . $log->contextId . ' at: ' . $log->at . " : " . $log->message);
+            debugging("mod_hvp mobile javascript log: User: " . $USER->id . " Context: " . $log->contextId . ' at: ' . $log->at .
+                " : " . $log->message);
         }
 
         return ['success' => true];

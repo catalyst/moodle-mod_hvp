@@ -121,7 +121,7 @@ class bundled_mobile_handler {
             'selectors' => [
                 'iframe' => 'hvp-mobile-iframe-' . $uniqueid,
                 'gradesyncnotification' => 'hvp-grade-sync-notification-' . $uniqueid,
-                'loadingnotification' => 'hvp-loading-notification-' . $uniqueid, 
+                'loadingnotification' => 'hvp-loading-notification-' . $uniqueid,
             ]
         ];
         $js .= 'window.' . js_writer::set_variable('hvp', $jsdata, false);
@@ -280,14 +280,14 @@ class bundled_mobile_handler {
      */
     private function ensure_h5p_core_fonts_stored() {
         global $CFG;
-        
+
         $corefonts = [
             'h5p-core-28.ttf',
         ];
 
         $fs = get_file_storage();
 
-        foreach($corefonts as $font) {
+        foreach ($corefonts as $font) {
             $record = (object) [
                 'contextid' => context_system::instance()->id,
                 'component' => 'mod_hvp',
@@ -477,9 +477,9 @@ class bundled_mobile_handler {
                 // ../libraries/H5p.FontIcons/fonts/h5p.ttf.
 
                 $split = explode('/', $fonturl);
-                foreach($split as $i => $val) {
+                foreach ($split as $i => $val) {
                     if ($val == '..' && $i != 0) {
-                        // Empty previous (dont remove to keep indexing the same)
+                        // Empty previous (dont remove to keep indexing the same).
                         $split[$i - 1] = '';
                     }
                 }

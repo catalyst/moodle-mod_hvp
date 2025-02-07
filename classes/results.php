@@ -23,7 +23,6 @@
  */
 
 namespace mod_hvp;
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * The mod_hvp file storage class.

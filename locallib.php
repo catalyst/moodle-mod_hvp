@@ -247,7 +247,9 @@ function hvp_add_editor_assets($id = null, $mformid = null) {
     $editorajaxtoken = \H5PCore::createToken('editorajax');
 
     $interface = \mod_hvp\framework::instance('interface');
-    $enablecontenthub = ($interface->getOption('hub_is_enabled', null) ? $interface->getOption('h5p_search_content_hub', null) : "0") === "1";
+    $enablecontenthub = ($interface->getOption('hub_is_enabled', null)
+        ? $interface->getOption('h5p_search_content_hub', null)
+        : "0") === "1";
 
     $settings['editor'] = array(
       'filesPath' => $filespathbase . 'editor',
@@ -598,7 +600,7 @@ function hvp_send_notification_messages($course, $hvp, $attempt, $context, $cm) 
     global $CFG, $DB;
 
     // Do nothing if required objects not present.
-    if (empty($course) or empty($hvp) or empty($attempt) or empty($context)) {
+    if (empty($course) || empty($hvp) || empty($attempt) || empty($context)) {
         throw new coding_exception('$course, $hvp, $attempt, $context and $cm must all be set.');
     }
 

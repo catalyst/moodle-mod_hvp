@@ -25,8 +25,6 @@
 
 namespace mod_hvp;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Class content_user_data handles user data and corresponding db operations.
  *

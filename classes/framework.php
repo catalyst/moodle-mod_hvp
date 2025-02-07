@@ -1152,8 +1152,8 @@ class framework implements \H5PFrameworkInterface {
             'mobilerendermethod' => $content['mobilerendermethod'] ?? mobile::RENDER_METHOD_UNSET,
         ));
 
-        if (isset($content[ 'completionpass'])) {
-            $data[ 'completionpass' ] = $content[ 'completionpass' ];
+        if (isset($content['completionpass'])) {
+            $data['completionpass'] = $content['completionpass'];
         }
 
         if (!isset($content['id'])) {

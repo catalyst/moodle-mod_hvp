@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace mod_hvp\tests;
+namespace mod_hvp;
 
 use mod_hvp\framework;
 use mod_hvp\helper;

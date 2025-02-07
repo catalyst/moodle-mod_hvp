@@ -25,8 +25,6 @@
 
 namespace mod_hvp;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Class xapi_result handles xapi results and corresponding db operations.
  *

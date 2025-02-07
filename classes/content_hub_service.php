@@ -18,8 +18,6 @@ namespace mod_hvp;
 use Exception;
 use moodle_url;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Service for communicating with the content hub
  *

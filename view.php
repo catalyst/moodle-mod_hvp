@@ -31,11 +31,11 @@ $id = required_param('id', PARAM_INT);
 // Verify course context.
 $cm = get_coursemodule_from_id('hvp', $id);
 if (!$cm) {
-    print_error('invalidcoursemodule');
+    throw new \moodle_exception('invalidcoursemodule');
 }
 $course = $DB->get_record('course', array('id' => $cm->course));
 if (!$course) {
-    print_error('coursemisconf');
+    throw new \moodle_exception('coursemisconf');
 }
 require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
@@ -74,7 +74,9 @@ if ($CFG->branch < 400) {
     }
 }
 
-$hashub = (has_capability('mod/hvp:share', $context) && !empty(get_config('mod_hvp', 'site_uuid')) && !empty(get_config('mod_hvp', 'hub_secret')));
+$hashub = (has_capability('mod/hvp:share', $context)
+    && !empty(get_config('mod_hvp', 'site_uuid'))
+    && !empty(get_config('mod_hvp', 'hub_secret')));
 $isshared = $content['shared'] === '1';
 $huboptionsdata = array(
   'id' => $id,

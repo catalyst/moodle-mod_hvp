@@ -449,7 +449,7 @@ function hvp_grade_item_update($hvp, $grades=null) {
  * @param bool $nullifnone If true and the user has no grade then a grade item with rawgrade == null will be inserted
  */
 function hvp_update_grades($hvp=null, $userid=0, $nullifnone=true) {
-    if ($userid and $nullifnone) {
+    if ($userid && $nullifnone) {
         $grade = new stdClass();
         $grade->userid   = $userid;
         $grade->rawgrade = null;

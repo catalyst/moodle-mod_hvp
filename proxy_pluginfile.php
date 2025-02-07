@@ -71,6 +71,6 @@ $curl->setopt([
     },
 ]);
 
-// The proxy will pass content back from pluginfile.php
+// The proxy will pass content back from pluginfile.php.
 $url = new moodle_url('/pluginfile.php/'.ltrim($relativepath, '/'));
 $curl->get($url->out());
