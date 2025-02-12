@@ -40,6 +40,7 @@ $PAGE->set_title("{$SITE->shortname}: " . get_string('libraries', 'hvp'));
 $uploadform = new \mod_hvp\upload_libraries_form();
 if ($formdata = $uploadform->get_data()) {
     // Handle submitted valid form.
+    \core_php_time_limit::raise();
     $h5pstorage = \mod_hvp\framework::instance('storage');
     $h5pstorage->savePackage(null, null, true);
 }
@@ -61,6 +62,8 @@ if ($hubon) {
 
 $numnotfiltered = $core->h5pF->getNumNotFiltered();
 $libraries = $core->h5pF->loadLibraries();
+
+$upgradesavailable = false;
 
 // Add settings for each library.
 $settings = array();
@@ -98,6 +101,9 @@ foreach ($libraries as $versions) {
             'detailsUrl' => null, // Not implemented in Moodle.
             'deleteUrl' => null // Not implemented in Moodle.
         );
+
+        $upgradeable = $upgradeurl && $core->h5pF->getNumContent($library->id) > 0;
+        $upgradesavailable = $upgradesavailable || $upgradeable;
 
         $i++;
     }
@@ -140,6 +146,20 @@ $uploadform->display();
 
 // Installed Libraries List.
 echo '<h3 class="h5p-admin-header">' . get_string('installedlibraries', 'hvp')  . '</h3>';
+echo $OUTPUT->box_start();
+if ($hubon) {
+    $url = new moodle_url('/mod/hvp/update_libraries.php');
+    echo $OUTPUT->single_button($url, get_string('updatealllibraries', 'hvp'));
+}
+$url = new moodle_url('/mod/hvp/upgrade_all_content.php');
+$options = [];
+if (!$upgradesavailable) {
+    $options['disabled'] = true;
+}
+echo $OUTPUT->single_button($url, get_string('upgradebulkcontent', 'hvp'), 'post', $options);
+$url = new moodle_url('/mod/hvp/export_libraries.php');
+echo $OUTPUT->single_button($url, get_string('exportlibraries', 'hvp'));
+echo $OUTPUT->box_end();
 echo '<div id="h5p-admin-container"></div>';
 
 echo $OUTPUT->footer();

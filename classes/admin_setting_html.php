@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * No setting - just html
  * Note: since admin_setting is not namespaced, this can not be namespaced and put into a class
@@ -27,7 +25,8 @@ class admin_setting_html extends admin_setting {
     /**
      * not a setting, just html
      *
-     * @param string $name unique ascii name, either 'mysetting' for settings that in config, or 'myplugin/mysetting' for ones in config_plugins.
+     * @param string $name unique ascii name, either 'mysetting' for settings that in config,
+     * or 'myplugin/mysetting' for ones in config_plugins.
      */
     public function __construct($name, $translation, $hubinfo) {
         $this->nosave  = true;
@@ -68,7 +67,7 @@ class admin_setting_html extends admin_setting {
         global $OUTPUT;
         $registrationurl = new moodle_url('/mod/hvp/content_hub_registration.php');
         if ($this->hubinfo === false) {
-          $this->hubinfo = (object) [];
+            $this->hubinfo = (object) [];
         }
         $this->hubinfo->register = get_string('contenthub:register', 'hvp', $registrationurl->out(false));
         $this->hubinfo->changesettings = get_string('contenthub:changesettings', 'hvp', $registrationurl->out(false));

@@ -106,17 +106,22 @@ function hvp_get_core_assets($context) {
     $settings['loadedJs'] = array();
     $settings['loadedCss'] = array();
 
-    // Add core stylesheets.
-    foreach (\H5PCore::$styles as $style) {
-        $url = generate_css_url('library/' . $style);
-        $settings['core']['styles'][] = $url->out(false);
-        $PAGE->requires->css($url);
-    }
-    // Add core JavaScript.
-    foreach (\H5PCore::$scripts as $script) {
-        $scriptpath = '/mod/hvp/library/' . $script;
-        $settings['core']['scripts'][] = generate_js_url($scriptpath)->out(false);
-        $PAGE->requires->js($scriptpath, true);
+    // Do not use $PAGE->requires when viewing via mobile (aka a webservice).
+    global $ME;
+
+    if (strpos($ME ?? '', 'webservice') == false) {
+        // Add core stylesheets.
+        foreach (\H5PCore::$styles as $style) {
+            $url = generate_css_url('library/' . $style);
+            $settings['core']['styles'][] = $url->out(false);
+            $PAGE->requires->css($url);
+        }
+        // Add core JavaScript.
+        foreach (\H5PCore::$scripts as $script) {
+            $scriptpath = '/mod/hvp/library/' . $script;
+            $settings['core']['scripts'][] = generate_js_url($scriptpath)->out(false);
+            $PAGE->requires->js($scriptpath, true);
+        }
     }
 
     return $settings;
@@ -242,7 +247,9 @@ function hvp_add_editor_assets($id = null, $mformid = null) {
     $editorajaxtoken = \H5PCore::createToken('editorajax');
 
     $interface = \mod_hvp\framework::instance('interface');
-    $enablecontenthub = ($interface->getOption('hub_is_enabled', null) ? $interface->getOption('h5p_search_content_hub', null) : "0") === "1";
+    $enablecontenthub = ($interface->getOption('hub_is_enabled', null)
+        ? $interface->getOption('h5p_search_content_hub', null)
+        : "0") === "1";
 
     $settings['editor'] = array(
       'filesPath' => $filespathbase . 'editor',
@@ -593,7 +600,7 @@ function hvp_send_notification_messages($course, $hvp, $attempt, $context, $cm) 
     global $CFG, $DB;
 
     // Do nothing if required objects not present.
-    if (empty($course) or empty($hvp) or empty($attempt) or empty($context)) {
+    if (empty($course) || empty($hvp) || empty($attempt) || empty($context)) {
         throw new coding_exception('$course, $hvp, $attempt, $context and $cm must all be set.');
     }
 
@@ -610,7 +617,7 @@ function hvp_send_notification_messages($course, $hvp, $attempt, $context, $cm) 
     // Check for notifications required.
     $notifyfields = 'u.id, u.username, u.idnumber, u.email, u.emailstop, u.lang,
             u.timezone, u.mailformat, u.maildisplay, u.auth, u.suspended, u.deleted, ';
-    $notifyfields .= get_all_user_name_fields(true, 'u');
+    $notifyfields .= 'u.' . implode(', u.', \core_user\fields::get_name_fields());
     $groups       = groups_get_all_groups($course->id, $submitter->id, $cm->groupingid);
     if (is_array($groups) && count($groups) > 0) {
         $groups = array_keys($groups);

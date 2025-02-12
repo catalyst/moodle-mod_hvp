@@ -22,8 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Adds data for tracking when content was created and last modified.
  */
@@ -546,7 +544,8 @@ function hvp_upgrade_2020112600() {
     // Add Content Hub fields to main content table.
     $table = new xmldb_table('hvp');
     if (!$dbman->field_exists($table, 'shared')) {
-        $dbman->add_field($table, new xmldb_field('shared', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, 0, 'completionpass'));
+        $dbman->add_field($table, new xmldb_field('shared', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, 0,
+            'completionpass'));
     }
     if (!$dbman->field_exists($table, 'synced')) {
         $dbman->add_field($table, new xmldb_field('synced', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'shared'));
@@ -592,7 +591,8 @@ function hvp_upgrade_2022012001() {
 
     // Define index library_id-hvp_id-dependency_type (not unique) to be added to hvp_contents_libraries.
     $table = new xmldb_table('hvp_contents_libraries');
-    $index = new xmldb_index('library_id-hvp_id-dependency_type', XMLDB_INDEX_NOTUNIQUE, ['library_id', 'hvp_id', 'dependency_type']);
+    $index = new xmldb_index('library_id-hvp_id-dependency_type', XMLDB_INDEX_NOTUNIQUE,
+        ['library_id', 'hvp_id', 'dependency_type']);
 
     // Conditionally launch add index library_id-hvp_id-dependency_type.
     if (!$dbman->index_exists($table, $index)) {
@@ -626,6 +626,23 @@ function hvp_upgrade_2023122501() {
     }
 }
 
+/**
+ * Adds mobile render method field
+ */
+function hvp_upgrade_2023122502() {
+    global $DB;
+    $dbman = $DB->get_manager();
+
+    // Define field id to be added to hvp.
+    $table = new xmldb_table('hvp');
+    $field = new xmldb_field('mobilerendermethod', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0', 'a11y_title');
+
+    // Conditionally launch add field id.
+    if (!$dbman->field_exists($table, $field)) {
+        $dbman->add_field($table, $field);
+    }
+}
+
 
 /**
  * Hvp module upgrade function.
@@ -655,6 +672,7 @@ function xmldb_hvp_upgrade($oldversion) {
         2020112600,
         2022012001,
         2023122501,
+        2023122502,
     ];
 
     foreach ($upgrades as $version) {

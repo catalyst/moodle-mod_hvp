@@ -13,20 +13,38 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+/**
+ * Mobile definitions.
+ *
+ * @package    mod_hvp
+ * @copyright  2024 Catalyst IT Australia
+ * @author     Matthew Hilton <matthewhilton@catalyst-au.net>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 defined('MOODLE_INTERNAL') || die();
 
-$addons = array(
-    "mod_hvp" => array( // Plugin identifier.
-        'handlers' => array( // Different places where the plugin will display content.
-            'coursehvp' => array( // Handler unique name (alphanumeric).
-                'delegate'    => 'CoreCourseModuleDelegate', // Delegate (where to display the link to the plugin).
-                'method'      => 'mobile_course_view', // Main function in \mod_certificate\output\mobile.
-                'displaydata' => array(
+$addons = [
+    "mod_hvp" => [
+        'handlers' => [
+            'coursehvp' => [
+                'delegate'    => 'CoreCourseModuleDelegate',
+                'method'      => 'mobile_course_view',
+                'displaydata' => [
                     'icon'  => $CFG->wwwroot . '/mod/hvp/pix/icon.svg',
                     'class' => '',
-                ),
-            )
-        )
-    )
-);
+                ],
+                'offlinefunctions' => [
+                    'mobile_course_view' => [],
+                ],
+                'ptrenabled' => false,
+                'displayrefresh' => true,
+                'downloadbutton' => true,
+            ],
+        ],
+        'lang' => [
+            ['mobilesyncpending', 'hvp'],
+            ['mobileloading', 'hvp'],
+        ],
+    ],
+];

@@ -26,8 +26,6 @@ namespace mod_hvp;
 
 use moodle_url;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Handles finding and attaching assets for view
  * @package mod_hvp
@@ -41,7 +39,7 @@ class view_assets {
     private $jsrequires;
     private $cssrequires;
 
-    protected $settings;
+    public $settings;
     protected $embedtype;
     protected $files;
 
@@ -66,13 +64,13 @@ class view_assets {
         // Add JavaScript settings for this content.
         $cid                                  = 'cid-' . $this->content['id'];
         $root = self::getsiteroot();
-        $this->settings['contents'][ $cid ]   = array(
+        $this->settings['contents'][$cid] = array(
             'library'         => \H5PCore::libraryToString($this->content['library']),
             'jsonContent'     => $this->getfilteredparameters(),
             'fullScreen'      => $this->content['library']['fullscreen'],
-            'exportUrl'       => $this->getexportsettings($displayoptions[ \H5PCore::DISPLAY_OPTION_DOWNLOAD ]),
-            'embedCode'       => $this->getembedcode($displayoptions[ \H5PCore::DISPLAY_OPTION_EMBED ]),
-            'resizeCode'      => $this->getresizecode($displayoptions[ \H5PCore::DISPLAY_OPTION_EMBED ]),
+            'exportUrl' => $this->getexportsettings($displayoptions[\H5PCore::DISPLAY_OPTION_DOWNLOAD]),
+            'embedCode' => $this->getembedcode($displayoptions[\H5PCore::DISPLAY_OPTION_EMBED]),
+            'resizeCode' => $this->getresizecode($displayoptions[\H5PCore::DISPLAY_OPTION_EMBED]),
             'title'           => $this->content['title'],
             'displayOptions'  => $displayoptions,
             'url'             => "{$root}/mod/hvp/view.php?id={$this->cm->id}",
@@ -104,10 +102,10 @@ class view_assets {
         // substantial time. This will allow other pages to use the session
         // without waiting on the file operation to finish.
         //
-        // NOTE: the method framework::messages() must not be called before
-        //       the session is closed.
-        if (empty($this->content["filtered"]))
+        // NOTE: the method framework::messages() must not be called before the session is closed.
+        if (empty($this->content["filtered"])) {
             \core\session\manager::write_close();
+        }
 
         $safeparameters = $this->core->filterParameters($this->content);
         $decodedparams  = json_decode($safeparameters);
@@ -197,7 +195,7 @@ class view_assets {
      *
      * @return array Files that the view has dependencies to
      */
-    private function getdependencyfiles() {
+    public function getdependencyfiles() {
         global $PAGE;
 
         $preloadeddeps = $this->core->loadContentDependencies($this->content['id'], 'preloaded');
@@ -247,8 +245,8 @@ class view_assets {
         } else {
             // JavaScripts and stylesheets will be loaded through h5p.js.
             $cid                                           = 'cid-' . $this->content['id'];
-            $this->settings['contents'][ $cid ]['scripts'] = $this->core->getAssetsUrls($this->files['scripts']);
-            $this->settings['contents'][ $cid ]['styles']  = $this->core->getAssetsUrls($this->files['styles']);
+            $this->settings['contents'][$cid]['scripts'] = $this->core->getAssetsUrls($this->files['scripts']);
+            $this->settings['contents'][$cid]['styles'] = $this->core->getAssetsUrls($this->files['styles']);
         }
     }
 
@@ -352,7 +350,7 @@ class view_assets {
      */
     public function validatecontent() {
         if ($this->content === null) {
-            print_error('invalidhvp', 'mod_hvp');
+            throw new \moodle_exception('invalidhvp', 'mod_hvp');
         }
     }
 

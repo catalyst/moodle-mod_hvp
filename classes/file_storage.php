@@ -409,7 +409,8 @@ class file_storage implements \H5PFileStorage {
 
             if (!has_capability('moodle/course:ignorefilesizelimits', $context)) {
                 if ($uploadedfile['size'] > $maxsize) {
-                    \H5PCore::ajaxError(get_string('maxbytesfile', 'error', ['file' => $filename, 'size' => display_size($maxsize)]));
+                    \H5PCore::ajaxError(get_string('maxbytesfile', 'error',
+                        ['file' => $filename, 'size' => display_size($maxsize)]));
                     return;
                 }
             }
@@ -543,8 +544,8 @@ class file_storage implements \H5PFileStorage {
         // Create an empty zip to store a full lib archive as well.
         if (empty($archive) && $exportzip) {
             $archive = new \ZipArchive();
-            $path = tempnam(get_request_storage_directory(),'libdir');
-            $archive->open($path, \ZipArchive::CREATE || \ZipArchive::OVERWRITE);
+            $path = tempnam(get_request_storage_directory(), 'libdir');
+            $archive->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
             // Set recursion flag.
             $top = true;
         } else {
@@ -643,7 +644,7 @@ class file_storage implements \H5PFileStorage {
             $filepath,
             'lib-export.zip'
         )) {
-            // Libraries may have a precompiled zip to extract
+            // Libraries may have a precompiled zip to extract.
             $reqpath = get_request_storage_directory() . '/libzip.zip';
             $file->copy_content_to($reqpath);
 
@@ -1004,7 +1005,7 @@ class file_storage implements \H5PFileStorage {
         return file_put_contents($filepath, $stream);
     }
 
-    // @codingStandardIgnoreLine
+    // @codingStandardsIgnoreLine
     public function deleteLibrary($library) {
         // TODO: Implement deleteLibrary() method.
     }

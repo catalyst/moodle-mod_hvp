@@ -21,6 +21,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use mod_hvp\output\mobile;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/course/moodleform_mod.php');
@@ -105,6 +107,19 @@ class mod_hvp_mod_form extends moodleform_mod {
             }
         }
 
+        // Mobile render method.
+        $mform->addElement('header', 'mobileoptions', get_string('mobileoptions', 'hvp'));
+        $mobilerendermethods = [
+            mobile::RENDER_METHOD_WEB_IFRAME => get_string('mobile:rendermethod:webiframe', 'hvp'),
+            mobile::RENDER_METHOD_BUNDLED => get_string('mobile:rendermethod:bundled', 'hvp'),
+            mobile::RENDER_METHOD_UNSET => get_string('mobile:rendermethod:unset', 'hvp'),
+        ];
+        $mform->addElement('select', 'mobilerendermethod', get_string('mobilerendermethod', 'hvp'), $mobilerendermethods);
+        $mform->addHelpButton('mobilerendermethod', 'mobilerendermethod', 'hvp');
+
+        $mform->setType('mobilerendermethod', PARAM_INT);
+        $mform->setDefault('mobilerendermethod', mobile::RENDER_METHOD_UNSET);
+
         // Grade settings.
         $this->standard_grading_coursemodule_elements();
         $mform->removeElement('grade');
@@ -171,7 +186,7 @@ class mod_hvp_mod_form extends moodleform_mod {
     }
 
     public function data_preprocessing(&$defaultvalues) {
-        global $DB;
+        global $DB, $PAGE;
         $core = \mod_hvp\framework::instance();
 
         $content = null;
@@ -210,10 +225,12 @@ class mod_hvp_mod_form extends moodleform_mod {
             $defaultvalues['completionpass'] = 0; // Forced unchecked.
         }
 
-        // Add required editor assets.
-        require_once('locallib.php');
-        $mformid = $this->_form->getAttribute('id');
-        \hvp_add_editor_assets($content === null ? null : $defaultvalues['id'], $mformid);
+        if ($PAGE->pagetype != 'course-defaultcompletion') {
+            // Add required editor assets.
+            require_once('locallib.php');
+            $mformid = $this->_form->getAttribute('id');
+            \hvp_add_editor_assets($content === null ? null : $defaultvalues['id'], $mformid);
+        }
     }
 
     /**
@@ -437,6 +454,11 @@ class mod_hvp_mod_form extends moodleform_mod {
         global $CFG;
 
         $mform   =& $this->_form;
+        // Moodle 4.0 introduces its own pass grade completion rule, so we'll remove it as we have our own.
+        // We can switch to the core version if we no longer need to support < 4.0.
+        if ($mform->elementExists('completionpassgrade')) {
+            $mform->removeElement('completionpassgrade');
+        }
 
         // Changes for Moodle 4.3 - MDL-78516.
         if ($CFG->branch < 403) {

@@ -26,8 +26,6 @@ namespace mod_hvp\task;
 
 use mod_hvp\mobile_auth;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The mod_hvp remove old auth tokens class
  *

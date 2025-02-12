@@ -70,6 +70,8 @@ function hvp_supports($feature) {
             return true;
         case FEATURE_SHOW_DESCRIPTION:
             return true;
+        case FEATURE_MOD_PURPOSE:
+            return MOD_PURPOSE_CONTENT;
 
         default:
             return null;
@@ -249,7 +251,15 @@ function hvp_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload
 
     switch ($filearea) {
         default:
-            return false; // Invalid file area.
+         return false; // Invalid file area.
+
+        case 'mobile_fonts':
+            if ($context->contextlevel != CONTEXT_SYSTEM) {
+                return false;
+            }
+
+            $itemid = 0;
+            break;
 
         case 'libraries':
             if ($context->contextlevel != CONTEXT_SYSTEM) {
@@ -439,7 +449,7 @@ function hvp_grade_item_update($hvp, $grades=null) {
  * @param bool $nullifnone If true and the user has no grade then a grade item with rawgrade == null will be inserted
  */
 function hvp_update_grades($hvp=null, $userid=0, $nullifnone=true) {
-    if ($userid and $nullifnone) {
+    if ($userid && $nullifnone) {
         $grade = new stdClass();
         $grade->userid   = $userid;
         $grade->rawgrade = null;
@@ -525,4 +535,32 @@ function mod_hvp_core_calendar_provide_event_action(calendar_event $event, actio
             1,
             true
     );
+}
+
+/**
+ * Add a get_coursemodule_info function in case any forum type wants to add 'extra' information
+ * for the course (see resource).
+ *
+ * Given a course_module object, this function returns any "extra" information that may be needed
+ * when printing this activity in a course listing.  See get_array_of_activities() in course/lib.php.
+ *
+ * @param stdClass $coursemodule The coursemodule object (record).
+ * @return cached_cm_info An object on information that the courses
+ *                        will know about (most noticeably, an icon).
+ */
+function hvp_get_coursemodule_info($coursemodule) {
+    global $DB;
+
+    if (!$hvp = $DB->get_record('hvp', array('id' => $coursemodule->instance), 'completionpass')) {
+        return null;
+    }
+
+    $info = new cached_cm_info();
+
+    // Populate the custom completion rules as key => value pairs, but only if the completion mode is 'automatic'.
+    if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
+        $info->customdata['customcompletionrules']['completionpass'] = $hvp->completionpass;
+    }
+
+    return $info;
 }

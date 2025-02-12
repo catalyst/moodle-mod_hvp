@@ -24,8 +24,6 @@
 
 namespace mod_hvp\event;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The mod_hvp instance list viewed event class.
  *
@@ -33,8 +31,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  @copyright  2016 Joubel AS <contact@joubel.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class attempt_submitted extends \core\event\base
-{
+class attempt_submitted extends \core\event\base {
 
     /**
      * @inheritDoc

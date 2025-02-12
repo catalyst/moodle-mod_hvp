@@ -24,8 +24,6 @@
 
 namespace mod_hvp;
 
-defined('MOODLE_INTERNAL') || die();
-
 class mobile_auth {
 
     const VALID_TIME = 60;

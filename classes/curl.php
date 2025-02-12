@@ -27,8 +27,6 @@ namespace mod_hvp;
 
 use curl as moodlecurl;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Override Moodle's curl class to provide proper PUT support.
  *

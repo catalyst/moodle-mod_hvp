@@ -16,83 +16,82 @@
 
 namespace mod_hvp\output;
 
-defined('MOODLE_INTERNAL') || die();
+use coding_exception;
+use mod_hvp\local\bundled_mobile_handler;
+use mod_hvp\local\web_iframe_mobile_handler;
 
-use context_module;
-use mod_hvp;
-
+/**
+ * Mobile output handler
+ *
+ * @package    mod_hvp
+ * @copyright  2024 Catalyst IT Australia
+ * @author     Matthew Hilton <matthewhilton@catalyst-au.net>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class mobile {
 
-    public static function mobile_course_view($args) {
-        global $DB, $CFG, $OUTPUT, $USER;
+    /**
+     * @var Default compatibility render method
+     */
+    public const RENDER_METHOD_WEB_IFRAME = 1;
 
-        $cmid = $args['cmid'];
-        if (empty($CFG->allowframembedding) && !\core_useragent::is_moodle_app()) {
-            $context = \context_system::instance();
-            if (has_capability('moodle/site:config', $context)) {
-                $template = 'mod_hvp/iframe_embedding_disabled';
-            } else {
-                $template = 'mod_hvp/contact_site_administrator';
-            }
-            return array(
-                'templates' => array(
-                    array(
-                        'id' => 'noiframeembedding',
-                        'html' => $OUTPUT->render_from_template($template, [])
-                    )
-                )
-            );
+    /**
+     * @var Advanced offline render method
+     */
+    public const RENDER_METHOD_BUNDLED = 2;
+
+    /**
+     * @var Unset - uses the method configured at site level
+     */
+    public const RENDER_METHOD_UNSET = 0;
+
+    /**
+     * Is bundled mode enabled site-wide?
+     * @return int one of RENDER_METHOD_*
+     */
+    private static function get_site_default_handler(): int {
+        $val = get_config('mod_hvp', 'mobilehandler');
+
+        // If unset, or false, use the default iframe method.
+        if ($val === self::RENDER_METHOD_UNSET || $val == false) {
+            return self::RENDER_METHOD_WEB_IFRAME;
         }
 
-        // Verify course context.
-        $cm = get_coursemodule_from_id('hvp', $cmid);
-        if (!$cm) {
-            print_error('invalidcoursemodule');
-        }
-        $course = $DB->get_record('course', array('id' => $cm->course));
-        if (!$course) {
-            print_error('coursemisconf');
-        }
-        require_course_login($course, false, $cm, true, true);
-        $context = context_module::instance($cm->id);
-        require_capability('mod/hvp:view', $context);
+        return $val;
+    }
 
-        list($token, $secret) = mod_hvp\mobile_auth::create_embed_auth_token();
+    /**
+     * Gets the handler for this course module and handles the request for this course module.
+     * @param stdClass $cm
+     * @return array
+     */
+    private static function handle($cm): array {
+        global $DB;
+        $method = (int) $DB->get_field('hvp', 'mobilerendermethod', ['id' => $cm->instance]);;
 
-        // Store secret in database.
-        $auth             = $DB->get_record('hvp_auth', array(
-            'user_id' => $USER->id,
-        ));
-        $currenttimestamp = time();
-        if ($auth) {
-            $DB->update_record('hvp_auth', array(
-                'id'         => $auth->id,
-                'secret'     => $token,
-                'created_at' => $currenttimestamp,
-            ));
-        } else {
-            $DB->insert_record('hvp_auth', array(
-                'user_id'    => $USER->id,
-                'secret'     => $token,
-                'created_at' => $currenttimestamp
-            ));
+        // Unset, use site config to pick one.
+        if ($method == self::RENDER_METHOD_UNSET) {
+            $method = self::get_site_default_handler();
         }
 
-        $data = [
-            'cmid'    => $cmid,
-            'wwwroot' => $CFG->wwwroot,
-            'user_id' => $USER->id,
-            'secret'  => urlencode($secret)
-        ];
+        switch($method) {
+            case self::RENDER_METHOD_BUNDLED:
+                return (new bundled_mobile_handler($cm))->handle();
+            case self::RENDER_METHOD_WEB_IFRAME:
+                return (new web_iframe_mobile_handler($cm))->handle();
+        }
 
-        return array(
-            'templates'  => array(
-                array(
-                    'id'   => 'main',
-                    'html' => $OUTPUT->render_from_template('mod_hvp/mobile_view_page', $data),
-                ),
-            ),
-            'javascript' => file_get_contents($CFG->dirroot . '/mod/hvp/library/js/h5p-resizer.js'),
-        );
+        throw new coding_exception("No render handler specified for " . $method);
+    }
+
+    /**
+     * Mobile course view handler function.
+     * This function is called by webservices when the mobile app loads a module.
+     * @param array $args args from the mobile app. Usually only contains 1 'cmid' key
+     * @return array containing the data to send back to the app to render
+     */
+    public static function mobile_course_view($args): array {
+        $cm = get_coursemodule_from_id('hvp', $args['cmid'], 0, false, MUST_EXIST);
+        return self::handle($cm);
     }
 }

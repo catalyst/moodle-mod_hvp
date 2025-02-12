@@ -24,7 +24,6 @@
  */
 
 namespace mod_hvp;
-defined('MOODLE_INTERNAL') || die();
 
 class event extends \H5PEventBase {
     private $user;
