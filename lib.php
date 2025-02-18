@@ -49,6 +49,11 @@ require_once($CFG->dirroot . '/lib/csslib.php');
  * @return mixed true if the feature is supported, null if unknown
  */
 function hvp_supports($feature) {
+    // Totara compatibility.
+    if (defined('FEATURE_MOD_PURPOSE') && $feature == FEATURE_MOD_PURPOSE) {
+        return MOD_PURPOSE_CONTENT;
+    }
+
     switch($feature) {
         case FEATURE_GROUPS:
             return true;
@@ -70,8 +75,6 @@ function hvp_supports($feature) {
             return true;
         case FEATURE_SHOW_DESCRIPTION:
             return true;
-        case FEATURE_MOD_PURPOSE:
-            return MOD_PURPOSE_CONTENT;
 
         default:
             return null;

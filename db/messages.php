@@ -24,6 +24,11 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+// Totara compatibility.
+if (!defined('MESSAGE_DEFAULT_ENABLED')) {
+    define('MESSAGE_DEFAULT_ENABLED', MESSAGE_DEFAULT_LOGGEDIN | MESSAGE_DEFAULT_LOGGEDOFF);
+}
+
 $messageproviders = array(
     // Notify teacher that a student has submitted an attempt.
     'submission' => array(
