@@ -629,7 +629,7 @@ function hvp_upgrade_2023122501() {
 /**
  * Adds mobile render method field
  */
-function hvp_upgrade_20241121001() {
+function hvp_upgrade_2024112101() {
     global $DB;
     $dbman = $DB->get_manager();
 
@@ -672,7 +672,7 @@ function xmldb_hvp_upgrade($oldversion) {
         2020112600,
         2022012001,
         2023122501,
-        20241121001,
+        2024112101,
     ];
 
     foreach ($upgrades as $version) {
