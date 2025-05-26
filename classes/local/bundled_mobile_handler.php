@@ -283,6 +283,8 @@ class bundled_mobile_handler {
 
         $corefonts = [
             'h5p-core-28.ttf',
+            'h5p-core-29.ttf',
+            'h5p-core-30.ttf',
         ];
 
         $fs = get_file_storage();
@@ -299,11 +301,18 @@ class bundled_mobile_handler {
 
             if ($fs->file_exists($record->contextid, $record->component, $record->filearea, $record->itemid,
                 $record->filepath, $record->filename)) {
-                return;
+                continue;
+            }
+
+            $filepath = $CFG->dirroot . '/mod/hvp/library/fonts/' . $font;
+
+            // If file itself doesn't exist, skip (likely, the library has updated or renamed the font).
+            if (!file_exists($filepath)) {
+                continue;
             }
 
             // Else store file.
-            $fs->create_file_from_pathname($record, $CFG->dirroot . '/mod/hvp/library/fonts/' . $font);
+            $fs->create_file_from_pathname($record, $filepath);
         }
     }
 

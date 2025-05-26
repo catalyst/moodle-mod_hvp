@@ -567,3 +567,13 @@ function hvp_get_coursemodule_info($coursemodule) {
 
     return $info;
 }
+
+/**
+ * Whether the activity is branded.
+ * This information is used, for instance, to decide if a filter should be applied to the icon or not.
+ *
+ * @return bool True if the activity is branded, false otherwise.
+ */
+function hvp_is_branded(): bool {
+    return true;
+}
