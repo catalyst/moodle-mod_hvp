@@ -554,7 +554,7 @@ function mod_hvp_core_calendar_provide_event_action(calendar_event $event, actio
 function hvp_get_coursemodule_info($coursemodule) {
     global $DB;
 
-    if (!$hvp = $DB->get_record('hvp', array('id' => $coursemodule->instance), 'completionpass')) {
+    if (!$hvp = $DB->get_record('hvp', array('id' => $coursemodule->instance), '*')) {
         return null;
     }
 
@@ -563,6 +563,11 @@ function hvp_get_coursemodule_info($coursemodule) {
     // Populate the custom completion rules as key => value pairs, but only if the completion mode is 'automatic'.
     if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
         $info->customdata['customcompletionrules']['completionpass'] = $hvp->completionpass;
+    }
+
+    // Show the description on the course/section page.
+    if ($coursemodule->showdescription) {
+        $info->content = format_module_intro('hvp', $hvp, $coursemodule->id, false);
     }
 
     return $info;
