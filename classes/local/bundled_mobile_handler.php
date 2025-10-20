@@ -533,7 +533,7 @@ class bundled_mobile_handler {
             $files = array_filter($files);
 
             // Filter out non .ttf files.
-            $files = array_filter($files, fn($file) => str_ends_with($file->get_filename(), '.ttf'));
+            $files = array_filter($files, fn($file) => $this->str_ends_with($file->get_filename(), '.ttf'));
 
             return [
                 $family => $files,
@@ -553,5 +553,15 @@ class bundled_mobile_handler {
         $fontmap = array_map(fn($sources) => current($sources), $fontmap);
 
         return $fontmap;
+    }
+
+    /**
+     * Polyfill str_ends_with to allow php 7.4 to work
+     * @param string $haystack
+     * @param string $needle
+     * @return bool
+     */
+    private function str_ends_with(string $haystack, string $needle) {
+        return strlen($needle) === 0 || substr($haystack, -strlen($needle)) === $needle;
     }
 }
