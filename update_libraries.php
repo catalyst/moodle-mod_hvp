@@ -64,7 +64,7 @@ if ($confirm && confirm_sesskey()) {
                 ON lhc.machine_name = l.machine_name
              WHERE l.restricted = ?";
     $libraries = $DB->get_records_sql($sql, [0]);
-    $libraries = array_filter($libraries, function($library) {
+    $libraries = array_filter($libraries, function ($library) {
         global $DB;
         // Find local library with same major + minor.
         return !$DB->record_exists('hvp_libraries', [
@@ -96,12 +96,12 @@ if ($confirm && confirm_sesskey()) {
         // Retrieve content type from hub endpoint.
         $endpoint = H5PHubEndpoints::CONTENT_TYPES . $machinename;
         $url = H5PHubEndpoints::createURL($endpoint);
-        $path = $ajax->core->h5pF->getUploadedH5pPath();
-        $response = $ajax->core->h5pF->fetchExternalData($url, null, true, empty($path) ? true : $path);
+        $response = $ajax->core->h5pF->fetchExternalData($url, null, true, true);
         if (!$response) {
             echo $OUTPUT->notification("Unable to update {$library->title}: DOWNLOAD_FAILED", 'error');
             break;
         };
+        $path = $ajax->core->h5pF->getUploadedH5pPath();
 
         // Validate package.
         $validator = new H5PValidator($ajax->core->h5pF, $ajax->core);
