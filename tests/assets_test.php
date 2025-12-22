@@ -35,6 +35,12 @@ class assets_test extends \advanced_testcase {
      * Set up tests.
      */
     public function setUp(): void {
+        global $CFG;
+        require "$CFG->dirroot/version.php";
+        if (!empty($TOTARA)) {
+            $this->markTestSkipped("mod_hvp unit tests not supported in Totara");
+            return;
+        }
         $this->resetAfterTest();
         $this->setAdminUser();
     }

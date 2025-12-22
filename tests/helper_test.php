@@ -37,6 +37,12 @@ class helper_test extends \advanced_testcase {
      * Runs before every test.
      */
     public function setUp(): void {
+        global $CFG;
+        require "$CFG->dirroot/version.php";
+        if (!empty($TOTARA)) {
+            $this->markTestSkipped("mod_hvp unit tests not supported in Totara");
+            return;
+        }
         $this->resetAfterTest();
         $this->generator = $this->getDataGenerator()->get_plugin_generator('mod_hvp');
     }
