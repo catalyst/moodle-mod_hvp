@@ -51,76 +51,64 @@ if ($confirm && confirm_sesskey()) {
     $progressbar->create();
     $progressbar->update(0, 1, 'Finding libraries with updates');
 
+    // Update the hub cache first so we have the latest version info.
     $editor = mod_hvp\framework::instance('editor');
     $ajax = $editor->ajax;
     $token = \H5PCore::createToken('editorajax');
-
-    // Update the hub cache first so we have the latest version info.
     $ajax->core->updateContentTypeCache();
 
-    $sql = "SELECT DISTINCT lhc.machine_name, lhc.title, lhc.major_version, lhc.minor_version
+    $sql = "SELECT DISTINCT lhc.machine_name, lhc.title, lhc.major_version, lhc.minor_version, lhc.patch_version
               FROM {hvp_libraries_hub_cache} lhc
               JOIN {hvp_libraries} l
                 ON lhc.machine_name = l.machine_name
              WHERE l.restricted = ?";
     $libraries = $DB->get_records_sql($sql, [0]);
-    $libraries = array_filter($libraries, function($library) {
+    $libraries = array_filter($libraries, function ($library) {
         global $DB;
         // Find local library with same major + minor.
         return !$DB->record_exists('hvp_libraries', [
             'machine_name' => $library->machine_name,
             'major_version' => $library->major_version,
             'minor_version' => $library->minor_version,
+            'patch_version' => $library->patch_version,
         ]);
     });
 
     $total = count($libraries);
     $counter = 0;
 
+    $queuedlibraries = [];
+
     foreach ($libraries as $library) {
-        $progressbar->update($counter, $total, "Updating {$library->title}");
+        $machinename = $library->machine_name;
+        $librarytitle = $library->title;
+
+        $progressbar->update($counter, $total, "Creating update task for {$librarytitle}");
         $counter++;
 
-        $machinename = $library->machine_name;
+        $updatelibrarytask = new mod_hvp\task\update_library_task();
+        $updatelibrarytask->set_custom_data([
+            'machinename' => $machinename,
+            'librarytitle' => $librarytitle,
+        ]);
+        \core\task\manager::queue_adhoc_task($updatelibrarytask, true);
 
-        // Look up content type to ensure it's valid(and to check permissions).
-        $contenttype = $editor->ajaxInterface->getContentTypeCache($machinename);
-        if (!$contenttype) {
-            echo $OUTPUT->notification("Unable to update {$library->title}: INVALID_CONTENT_TYPE", 'error');
-            break;
-        }
-
-        // Override core permission check.
-        $ajax->core->mayUpdateLibraries(true);
-
-        // Retrieve content type from hub endpoint.
-        $endpoint = H5PHubEndpoints::CONTENT_TYPES . $machinename;
-        $url = H5PHubEndpoints::createURL($endpoint);
-        $path = $ajax->core->h5pF->getUploadedH5pPath();
-        $response = $ajax->core->h5pF->fetchExternalData($url, null, true, empty($path) ? true : $path);
-        if (!$response) {
-            echo $OUTPUT->notification("Unable to update {$library->title}: DOWNLOAD_FAILED", 'error');
-            break;
-        };
-
-        // Validate package.
-        $validator = new H5PValidator($ajax->core->h5pF, $ajax->core);
-        if (!$validator->isValidPackage(true, true)) {
-            $ajax->storage->removeTemporarilySavedFiles($path);
-            echo $OUTPUT->notification("Unable to update {$library->title}: VALIDATION_FAILED", 'error');
-            break;
-        }
-
-        // Save H5P.
-        $storage = new H5PStorage($ajax->core->h5pF, $ajax->core);
-        $storage->savePackage(null, null, true);
-
-        // Clean up.
-        $ajax->storage->removeTemporarilySavedFiles($path);
+        $version = "{$library->major_version}.{$library->minor_version}.{$library->patch_version}";
+        $queuedlibraries[$librarytitle] = $version;
     }
 
-    // Refresh content types.
-    $librariescache = $ajax->editor->getLatestGlobalLibrariesData();
+    if (!empty($queuedlibraries)) {
+        $message = 'The following libraries have been queued for updating:';
+        $message .= html_writer::start_tag('ul');
+        foreach ($queuedlibraries as $librarytitle => $version) {
+            $message .= html_writer::tag('li', "{$librarytitle} ({$version})");
+        }
+        $message .= html_writer::end_tag('ul');
+    } else {
+        $message = 'No libraries have been queued for updating.';
+    }
+
+    \core\notification::add($message, \core\notification::SUCCESS);
 
     $progressbar->update(1, 1, get_string('completed'));
     echo $OUTPUT->single_button($returnurl, get_string('upgradereturn', 'hvp'));

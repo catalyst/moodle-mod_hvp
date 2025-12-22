@@ -680,6 +680,10 @@ $string['mobileoptions'] = 'Mobile app options';
 // Update all libraries.
 $string['updatealllibraries'] = 'Update libraries';
 $string['updatealllibrariesconfirm'] = 'Do you wish to update all libraries (exluding restricted libraries)?';
+$string['updatelibrarytask'] = 'Update library';
+$string['updatedownloadfailed'] = 'Unable to update {$a}: DOWNLOAD_FAILED';
+$string['updateinvalidcontenttype'] = 'Unable to update {$a}: INVALID_CONTENT_TYPE';
+$string['updatevalidationfailed'] = 'Unable to update {$a}: VALIDATION_FAILED';
 
 // Upgrade all content.
 $string['upgradebulkcontent'] = 'Upgrade all content';
