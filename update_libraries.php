@@ -57,7 +57,7 @@ if ($confirm && confirm_sesskey()) {
     $token = \H5PCore::createToken('editorajax');
     $ajax->core->updateContentTypeCache();
 
-    $sql = "SELECT DISTINCT lhc.machine_name, lhc.title, lhc.major_version, lhc.minor_version
+    $sql = "SELECT DISTINCT lhc.machine_name, lhc.title, lhc.major_version, lhc.minor_version, lhc.patch_version
               FROM {hvp_libraries_hub_cache} lhc
               JOIN {hvp_libraries} l
                 ON lhc.machine_name = l.machine_name
@@ -70,6 +70,7 @@ if ($confirm && confirm_sesskey()) {
             'machine_name' => $library->machine_name,
             'major_version' => $library->major_version,
             'minor_version' => $library->minor_version,
+            'patch_version' => $library->patch_version,
         ]);
     });
 
@@ -92,7 +93,7 @@ if ($confirm && confirm_sesskey()) {
         ]);
         \core\task\manager::queue_adhoc_task($updatelibrarytask, true);
 
-        $version = "{$library->major_version}.{$library->minor_version}";
+        $version = "{$library->major_version}.{$library->minor_version}.{$library->patch_version}";
         $queuedlibraries[$librarytitle] = $version;
     }
 

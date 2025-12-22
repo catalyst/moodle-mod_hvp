@@ -94,6 +94,7 @@ class update_library_task extends adhoc_task {
         $librariescache = $ajax->editor->getLatestGlobalLibrariesData();
 
         $library = $DB->get_record('hvp_libraries_hub_cache', ['machine_name' => $machinename]);
-        mtrace("Successfully updated {$librarytitle} to version {$library->major_version}.{$library->minor_version}");
+        $version = "{$library->major_version}.{$library->minor_version}.{$library->patch_version}";
+        mtrace("Successfully updated {$librarytitle} to version {$version}");
     }
 }
