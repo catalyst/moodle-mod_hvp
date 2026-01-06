@@ -61,13 +61,13 @@
     margin-right: 0.5em;
     font-size: 0.7em;
     line-height: 1;
-    content: "\e917";
-}
-.content-hub-options .content-hub-unshare a:before {
     content: "\e916";
 }
-.content-hub-options .content-hub-sharing:before {
+.content-hub-options .content-hub-unshare a:before {
     content: "\e917";
+}
+.content-hub-options .content-hub-sharing:before {
+    content: "\e916";
     display: inline-block;
     animation: spin 2s linear infinite;
 }
