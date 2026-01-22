@@ -44,6 +44,15 @@ class mod_hvp_renderer extends plugin_renderer_base {
     }
 
     /**
+     * Alter which stylesheets are loaded for the H5P editor. This is useful for adding
+     * your own custom styles or replacing existing ones for the H5P editor.
+     *
+     * @param array $styles list of stylesheets that will be loaded
+     */
+    public function hvp_alter_editor_styles(&$styles) {
+    }
+
+    /**
      * Alter which scripts are loaded for H5P. Useful for adding your
      * own custom scripts or replacing existing ones.
      *
