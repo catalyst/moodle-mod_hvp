@@ -227,6 +227,10 @@ function hvp_add_editor_assets($id = null, $mformid = null) {
         }
     }
 
+    // Apply any theme styling overrides.
+    $renderer = $PAGE->get_renderer('mod_hvp');
+    $renderer->hvp_alter_editor_styles($assets['css']);
+
     // Add JavaScript with library framework integration (editor part).
     $PAGE->requires->js('/mod/hvp/editor/scripts/h5peditor-editor.js', true);
     $PAGE->requires->js('/mod/hvp/editor/scripts/h5peditor-init.js', true);
