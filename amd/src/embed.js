@@ -65,6 +65,7 @@ define(['jquery', 'mod_hvp/communicator'], function($, H5PEmbedCommunicator) {
                     }
 
                     // Use a delay to make sure iframe is resized to the correct size.
+                    // Catalyst change - set the timeout to 1ms to get a more accurate height for some libraries.
                     clearTimeout(resizeDelay);
                     resizeDelay = setTimeout(function() {
                         // Only resize if the iframe can be resized.
@@ -78,7 +79,7 @@ define(['jquery', 'mod_hvp/communicator'], function($, H5PEmbedCommunicator) {
                         } else {
                             H5PEmbedCommunicator.send('hello');
                         }
-                    }, 0);
+                    }, 1);
                 });
 
                 // Trigger initial resize for instance.
