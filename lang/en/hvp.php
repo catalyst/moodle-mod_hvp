@@ -694,3 +694,6 @@ $string['upgradebulkdone'] = 'You have successfully upgraded {$a->count} content
 // Export libraries.
 $string['exportlibraries'] = 'Export libraries';
 $string['exportlibrarieserror'] = 'An error occured while export the libraries.';
+
+// Restore H5P library.
+$string['restoreinstalldenied'] = 'You do not have permission to install missing content type \'{$a}\'. Please contact your site administrator.';
