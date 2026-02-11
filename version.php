@@ -23,7 +23,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-<<<<<<< HEAD
 $plugin->version   = 2026062500;
 $plugin->requires  = 2013051403;
 $plugin->cron      = 0;
@@ -31,12 +30,3 @@ $plugin->component = 'mod_hvp';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->release   = '1.28.2';
 $plugin->supported = [401, 404];
-=======
-$plugin->version   = 2024120900;
-$plugin->requires  = 2022112800; // 4.1.0
-$plugin->cron      = 0;
-$plugin->component = 'mod_hvp';
-$plugin->maturity  = MATURITY_STABLE;
-$plugin->supported = [401, 404];
-$plugin->release   = '1.27.2';
->>>>>>> 1bf0a39 ([#75] Bump minimum to 4.1)
