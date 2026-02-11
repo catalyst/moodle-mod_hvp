@@ -202,6 +202,24 @@ class restore_hvp_libraries_structure_step extends restore_activity_structure_st
 
         $libraryid = self::get_library_id($data);
         if (!$libraryid) {
+            // If this library is not installed, ensure that the user has
+            // permission to install it before proceeding.
+            $params = ['machine_name' => $data->machine_name];
+            if (!$DB->record_exists('hvp_libraries', $params)) {
+                $systemctx = \core\context\system::instance();
+                $caninstall = has_capability('mod/hvp:updatelibraries', $systemctx);
+
+                $librarycache = $DB->get_record('hvp_libraries_hub_cache', $params, 'id, is_recommended');
+                if ($librarycache && $librarycache->is_recommended) {
+                    $coursectx = \core\context\course::instance($this->get_courseid());
+                    $caninstall = $caninstall || has_capability('mod/hvp:installrecommendedh5plibraries', $coursectx);
+                }
+
+                if (!$caninstall) {
+                    throw new \core\exception\moodle_exception('restoreinstalldenied', 'hvp', '', $data->title);
+                }
+            }
+
             // There is no updating of libraries. If an older patch version exists
             // on the site that one will be used instead of the new one in the backup.
             // This is due to the default behavior when files are restored in Moodle.
