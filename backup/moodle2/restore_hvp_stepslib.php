@@ -194,7 +194,7 @@ class restore_hvp_libraries_structure_step extends restore_activity_structure_st
      * @throws restore_step_exception
      */
     protected function process_hvp_library($data) {
-        global $DB;
+        global $DB, $SCRIPT;
 
         $data = (object)$data;
         $oldid = $data->id;
@@ -202,30 +202,25 @@ class restore_hvp_libraries_structure_step extends restore_activity_structure_st
 
         $libraryid = self::get_library_id($data);
         if (!$libraryid) {
-            // If this library is not installed, ensure that the user has
-            // permission to install it before proceeding.
-            $params = ['machine_name' => $data->machine_name];
-            if (!$DB->record_exists('hvp_libraries', $params)) {
-                $systemctx = \core\context\system::instance();
-                $caninstall = has_capability('mod/hvp:updatelibraries', $systemctx);
+            if ($this->can_install($data->machine_name)) {
+                // There is no updating of libraries. If an older patch version exists
+                // on the site that one will be used instead of the new one in the backup.
+                // This is due to the default behavior when files are restored in Moodle.
 
-                $librarycache = $DB->get_record('hvp_libraries_hub_cache', $params, 'id, is_recommended');
-                if ($librarycache && $librarycache->is_recommended) {
-                    $coursectx = \core\context\course::instance($this->get_courseid());
-                    $caninstall = $caninstall || has_capability('mod/hvp:installrecommendedh5plibraries', $coursectx);
-                }
-
-                if (!$caninstall) {
+                // Restore library.
+                $libraryid = $DB->insert_record('hvp_libraries', $data);
+            } else {
+                // Due to a core bug throwing an exception here for an asynchronous restore will result in an
+                // infinate loop, see MDL-81511. So we throw an exception if this is not an adhoc task run,
+                // otherwise log and proceed with a -1 library id.
+                if (!$SCRIPT || strpos($SCRIPT, 'admin/cli/adhoc_task.php') === false) {
                     throw new \core\exception\moodle_exception('restoreinstalldenied', 'hvp', '', $data->title);
                 }
+                $this->log('skipping h5p library install', backup::LOG_WARNING, display: true);
+                $message = get_string('restoreinstalldenied_adhoc', 'hvp', $data->title);
+                mtrace($message);
+                $libraryid = -1;
             }
-
-            // There is no updating of libraries. If an older patch version exists
-            // on the site that one will be used instead of the new one in the backup.
-            // This is due to the default behavior when files are restored in Moodle.
-
-            // Restore library.
-            $libraryid = $DB->insert_record('hvp_libraries', $data);
 
             // Update libraries cache.
             self::get_library_id($data, $libraryid);
@@ -392,5 +387,27 @@ class restore_hvp_libraries_structure_step extends restore_activity_structure_st
             }
             unset($missingdeps[$oldid]);
         }
+    }
+
+    /**
+     * Checks if this user has the required capabilities to install libraries.
+     *
+     * @param string $machinename the machine name for the library we are trying to install
+     * @return bool
+     */
+    private function can_install(string $machinename): bool {
+        global $DB;
+
+        $systemctx = \core\context\system::instance();
+        $caninstall = has_capability('mod/hvp:updatelibraries', $systemctx);
+
+        $params = ['machine_name' => $machinename];
+        $librarycache = $DB->get_record('hvp_libraries_hub_cache', $params, 'id, is_recommended');
+        if ($librarycache?->is_recommended) {
+            $coursectx = \core\context\course::instance($this->get_courseid());
+            $caninstall = $caninstall || has_capability('mod/hvp:installrecommendedh5plibraries', $coursectx);
+        }
+
+        return $caninstall;
     }
 }
