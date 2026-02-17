@@ -697,3 +697,4 @@ $string['exportlibrarieserror'] = 'An error occured while export the libraries.'
 
 // Restore H5P library.
 $string['restoreinstalldenied'] = 'You do not have permission to install missing content type \'{$a}\'. Please contact your site administrator.';
+$string['restoreinstalldenied_adhoc'] = 'WARNING: H5P content type \'{$a}\' was not installed due to insufficient permission';
