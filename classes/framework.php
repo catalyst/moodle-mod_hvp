@@ -256,7 +256,7 @@ class framework implements \H5PFrameworkInterface {
 
         $errorno = $curl->get_errno();
         // Error handling.
-        if ($errorno) {
+        if ($errorno || !empty($curl->error)) {
             if ($alldata) {
                 $response = null;
             } else {
