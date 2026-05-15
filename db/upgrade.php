@@ -1,4 +1,5 @@
 <?php
+
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -643,6 +644,83 @@ function hvp_upgrade_2024112101() {
     }
 }
 
+/**
+ * Re-creates the library lib-export.zip archive file for libraries that have been bulk updated.
+ */
+function hvp_upgrade_2024120903() {
+    global $DB;
+
+    $core = \mod_hvp\framework::instance();
+    $hubon = $core->h5pF->getOption('hub_is_enabled', true);
+    if (!$hubon) {
+        // Hub is not enabled, libraries cannot be automatically updated.
+        return;
+    }
+
+    // Update the hub cache first so we have the latest info.
+    $editor = mod_hvp\framework::instance('editor');
+    $ajax = $editor->ajax;
+    $token = \H5PCore::createToken('editorajax');
+    $ajax->core->updateContentTypeCache();
+
+    // Grab all libraries that have had their library.json modified after lib-export.zip was created.
+    $sql = 'SELECT f.filepath
+              FROM {files} f
+              JOIN {files} fa ON fa.filepath = f.filepath AND fa.filename = :archivefilename
+             WHERE f.component = :component
+               AND f.filearea = :filearea
+               AND f.filename = :filename
+               AND f.itemid = 0
+               AND (f.timemodified - fa.timemodified) > :timebuffer';
+    $params = [
+        'archivefilename' => 'lib-export.zip',
+        'filename' => 'library.json',
+        'component' => 'mod_hvp',
+        'filearea' => 'libraries',
+        // Set time buffer to 3 days to be safe, since we don't want to be too agressive,
+        // any that do need to be updated that fit < 3 days can be manually fixed.
+        'timebuffer' => DAYSECS * 3,
+    ];
+
+    $librarypaths = $DB->get_records_sql($sql, $params);
+    foreach ($librarypaths as $librarypath) {
+        $filepath = trim($librarypath->filepath, '/');
+        $versionpos = strrpos($filepath, '-');
+        if ($versionpos !== false) {
+            // Separate machine name and version from filepath. Filepath is in the format /machinename-version/.
+            $machinename = substr($filepath, 0, $versionpos);
+            $version = substr($filepath, $versionpos + 1);
+            $versionparts = explode('.', $version);
+
+            if (!$DB->record_exists('hvp_libraries_hub_cache', ['machine_name' => $machinename])) {
+                // No matching library found in cache, most likely a util library, continue to next.
+                continue;
+            }
+
+            // Grab the library record.
+            $params = [
+                'machine_name' => $machinename,
+                'major_version' => $versionparts[0],
+                'minor_version' => $versionparts[1],
+            ];
+            $library = $DB->get_record('hvp_libraries', $params);
+
+            if ($library && $library->patch_version > 0) {
+                // Matching library found and has a patch version greater than 0.
+                // Reset the patch_version to 0 and create an update library task to force the library to re-save all files.
+                $library->patch_version = 0;
+                $DB->update_record('hvp_libraries', $library);
+
+                $updatelibrarytask = new mod_hvp\task\update_library_task();
+                $updatelibrarytask->set_custom_data([
+                    'machinename' => $machinename,
+                    'librarytitle' => $library->title,
+                ]);
+                \core\task\manager::queue_adhoc_task($updatelibrarytask, true);
+            }
+        }
+    }
+}
 
 /**
  * Hvp module upgrade function.
@@ -673,6 +751,7 @@ function xmldb_hvp_upgrade($oldversion) {
         2022012001,
         2023122501,
         2024112101,
+        2024120903,
     ];
 
     foreach ($upgrades as $version) {

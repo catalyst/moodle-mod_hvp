@@ -713,6 +713,11 @@ class file_storage implements \H5PFileStorage {
         if ($file) {
             $file->delete();
         }
+
+        // Remove the archive zip if it exists.
+        if ($file = $fs->get_file($contextid, 'mod_hvp', 'library_archives', $itemid, $filepath, 'lib-export.zip')) {
+            $file->delete();
+        }
     }
 
     /**
