@@ -46,6 +46,22 @@ $exportedlibraries = [];
 foreach ($libraries as $versions) {
     try {
         // We only want to export the latest version.
+        // H5P sorts libraries by title before version, this is normally fine but in some cases a
+        // library may have a beta version with (beta) in the library title. This naming then throws
+        // off the ordering, so we need to sort the array by version to ensure we get the latest version.
+        usort($versions, function ($a, $b) {
+            if ($a->major_version === $b->major_version) {
+                // Major version is the same, sort by minor version.
+                if ($a->minor_version === $b->minor_version) {
+                    // Minor version is also the same, sort by patch version.
+                    return $a->patch_version <=> $b->patch_version;
+                }
+                return $a->minor_version <=> $b->minor_version;
+            }
+            // Major version is different, sort by major version.
+            return $a->major_version <=> $b->major_version;
+        });
+
         $libraryinfo = array_pop($versions);
         $library = $interface->loadLibrary(
             $libraryinfo->machine_name,
@@ -103,7 +119,7 @@ send_stored_file($file);
  * @param string $tmppath
  * @param array $exportedlibraries
  */
-function exportlibrary($library, $exporter, $tmppath, &$exportedlibraries) {
+function exportlibrary(array $library, H5PExport $exporter, string $tmppath, array &$exportedlibraries) {
     if (in_array($library['libraryId'], $exportedlibraries)) {
         // Already exported.
         return;
@@ -113,7 +129,6 @@ function exportlibrary($library, $exporter, $tmppath, &$exportedlibraries) {
 
     // Determine path of export library.
     if (isset($exporter->h5pC) && isset($exporter->h5pC->h5pD)) {
-
         // Tries to find library in development folder.
         $isdevlibrary = $exporter->h5pC->h5pD->getLibrary(
             $library['machineName'],
@@ -126,16 +141,40 @@ function exportlibrary($library, $exporter, $tmppath, &$exportedlibraries) {
         }
     }
 
-    // Export library.
-    $exporter->h5pC->fs->exportLibrary($library, $tmppath, $exportfolder);
-    $exportedlibraries[] = $library['libraryId'];
-
-    // Now export the dependancies.
+    // Combine this library and it's dependencies to export, no need to get dependancy
+    // library's dependancies as findlibrarydependencies() is recursive.
     $dependencies = [];
-    $exporter->h5pC->findLibraryDependencies($dependencies, $library);
+    findlibrarydependencies($exporter->h5pC, $dependencies, $library);
+    $libraries = array_merge(
+        [$library],
+        array_column($dependencies, 'library')
+    );
 
-    foreach ($dependencies as $dependency) {
-        exportlibrary($dependency['library'], $exporter, $tmppath, $exportedlibraries);
+    // Export all of the libraries.
+    foreach ($libraries as $library) {
+        if (in_array($library['libraryId'], $exportedlibraries)) {
+            // Exact library has already been exported, move on.
+            continue;
+        }
+
+        // Determine path of export library.
+        $exportfolder = null;
+        if (isset($exporter->h5pC) && isset($exporter->h5pC->h5pD)) {
+            // Tries to find library in development folder.
+            $isdevlibrary = $exporter->h5pC->h5pD->getLibrary(
+                $library['machineName'],
+                $library['majorVersion'],
+                $library['minorVersion']
+            );
+
+            if ($isdevlibrary !== null && isset($library['path'])) {
+                $exportfolder = "/" . $library['path'];
+            }
+        }
+
+        // Export library.
+        $exporter->h5pC->fs->exportLibrary($library, $tmppath, $exportfolder);
+        $exportedlibraries[] = $library['libraryId'];
     }
 }
 
@@ -146,7 +185,7 @@ function exportlibrary($library, $exporter, $tmppath, &$exportedlibraries) {
  * @param array $files
  * @param string $relative
  */
-function populatefilelist($dir, &$files, $relative = '') {
+function populatefilelist(string $dir, array &$files, string $relative = '') {
     $strip = strlen($dir) + 1;
     $contents = glob($dir . '/' . '*');
     if (!empty($contents)) {
@@ -162,4 +201,71 @@ function populatefilelist($dir, &$files, $relative = '') {
             }
         }
     }
+}
+
+/**
+ * This is an edited copy of H5PCore::findLibraryDependencies.
+ * We need this edited function to ensure we get ALL version dependencies and not just
+ * the first version we need as a dependancy like in H5PCore::findLibraryDependencies.
+ *
+ * Example: both Library1 and Library2 have a dependancy for Library3 but different versions of Library3.
+ * In H5PCore we only get the first version we come acorss and miss the other version dependancy.
+ * Library1-1.0
+ *    - Library2-1.0
+ *       -- Library3-1.2
+ *    - Library3-1.0
+ *
+ * Recursive. Goes through the dependency tree for the given library and
+ * adds all the dependencies to the given array in a flat format.
+ *
+ * @param $dependencies
+ * @param array $library To find all dependencies for.
+ * @param int $nextweight An integer determining the order of the libraries
+ *  when they are loaded
+ * @param bool $editor Used internally to force all preloaded sub dependencies
+ *  of an editor dependency to be editor dependencies.
+ * @return int
+ * @see \H5PCore::findLibraryDependencies
+ */
+function findlibrarydependencies(\H5PCore $h5pcore, array &$dependencies, array $library, int $nextweight = 1, bool $editor = false) {
+    foreach (['dynamic', 'preloaded', 'editor'] as $type) {
+        $property = $type . 'Dependencies';
+        if (!isset($library[$property])) {
+            continue; // Skip, no such dependencies.
+        }
+
+        if ($type === 'preloaded' && $editor === true) {
+            // All preloaded dependencies of an editor library is set to editor.
+            $type = 'editor';
+        }
+
+        foreach ($library[$property] as $dependency) {
+            // Include the major and minor version in the key so we also get the correct versions of the dependant library.
+            $dependencykey = $type . '-' . $dependency['machineName'] . '-' . $dependency['majorVersion'] . '.' . $dependency['minorVersion'];
+            if (isset($dependencies[$dependencykey]) === true) {
+                continue; // Skip, already have this.
+            }
+
+            $dependencylibrary = $h5pcore->loadLibrary($dependency['machineName'], $dependency['majorVersion'], $dependency['minorVersion']);
+            if ($dependencylibrary) {
+                $dependencies[$dependencykey] = [
+                    'library' => $dependencylibrary,
+                    'type' => $type,
+                ];
+                $nextweight = findlibrarydependencies($h5pcore, $dependencies, $dependencylibrary, $nextweight, $type === 'editor');
+                $dependencies[$dependencykey]['weight'] = $nextweight++;
+            } else {
+                // This site is missing a dependency!
+                $replacements = [
+                    '@dep' => \H5PCore::libraryToString($dependency),
+                    '@lib' => \H5PCore::libraryToString($library),
+                ];
+                $h5pcore->h5pF->setErrorMessage(
+                    $h5pcore->h5pF->t('Missing dependency @dep required by @lib.', $replacements),
+                    'missing-library-dependency'
+                );
+            }
+        }
+    }
+    return $nextweight;
 }
