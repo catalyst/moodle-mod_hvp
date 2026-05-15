@@ -75,7 +75,9 @@ class update_library_task extends adhoc_task {
 
         // Validate package.
         $validator = new \H5PValidator($ajax->core->h5pF, $ajax->core);
-        if (!$validator->isValidPackage(true, true)) {
+        // Do not use update only, some library packages are missing required libraries and we don't
+        // want to block the update if that required library is already installed.
+        if (!$validator->isValidPackage(true)) {
             $ajax->storage->removeTemporarilySavedFiles($path);
             throw new \moodle_exception('updatevalidationfailed', 'mod_hvp', '', $librarytitle);
         }
