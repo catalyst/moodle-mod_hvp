@@ -46,6 +46,22 @@ $exportedlibraries = [];
 foreach ($libraries as $versions) {
     try {
         // We only want to export the latest version.
+        // H5P sorts libraries by title before version, this is normally fine but in some cases a
+        // library may have a beta version with (beta) in the library title. This naming then throws
+        // off the ordering, so we need to sort the array by version to ensure we get the latest version.
+        usort($versions, function ($a, $b) {
+            if ($a->major_version === $b->major_version) {
+                // Major version is the same, sort by minor version.
+                if ($a->minor_version === $b->minor_version) {
+                    // Minor version is also the same, sort by patch version.
+                    return $a->patch_version <=> $b->patch_version;
+                }
+                return $a->minor_version <=> $b->minor_version;
+            }
+            // Major version is different, sort by major version.
+            return $a->major_version <=> $b->major_version;
+        });
+
         $libraryinfo = array_pop($versions);
         $library = $interface->loadLibrary(
             $libraryinfo->machine_name,
