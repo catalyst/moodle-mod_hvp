@@ -638,15 +638,7 @@ function hvp_upgrade_2023122501() {
 /**
  * Adds mobile render method field
  */
-<<<<<<< HEAD
-<<<<<<< HEAD
 function hvp_upgrade_2024112101() {
-=======
-function hvp_upgrade_20241121001() {
->>>>>>> fdb41d2 (Fix database schema issue)
-=======
-function hvp_upgrade_2024112101() {
->>>>>>> 405d00a (Fix database schema issue - version number)
     global $DB;
     $dbman = $DB->get_manager();
 
@@ -769,7 +761,6 @@ function xmldb_hvp_upgrade($oldversion) {
         2023122502,
         2024112101,
         2024120903,
-        2024112101,
         2026050600,
     ];
 

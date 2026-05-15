@@ -398,22 +398,13 @@ class restore_hvp_libraries_structure_step extends restore_activity_structure_st
     private function can_install(string $machinename): bool {
         global $DB;
 
-<<<<<<< HEAD
         $systemctx = context_system::instance();
-=======
-        $systemctx = \core\context\system::instance();
->>>>>>> 38b610e (fix: do not throw library perm exception in adhoc restore)
         $caninstall = has_capability('mod/hvp:updatelibraries', $systemctx);
 
         $params = ['machine_name' => $machinename];
         $librarycache = $DB->get_record('hvp_libraries_hub_cache', $params, 'id, is_recommended');
-<<<<<<< HEAD
         if ($librarycache && $librarycache->is_recommended) {
             $coursectx = context_course::instance($this->get_courseid());
-=======
-        if ($librarycache?->is_recommended) {
-            $coursectx = \core\context\course::instance($this->get_courseid());
->>>>>>> 38b610e (fix: do not throw library perm exception in adhoc restore)
             $caninstall = $caninstall || has_capability('mod/hvp:installrecommendedh5plibraries', $coursectx);
         }
 
