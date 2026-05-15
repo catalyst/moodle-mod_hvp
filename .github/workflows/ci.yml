@@ -10,6 +10,5 @@ jobs:
       disable_mustache: true
       disable_phpdoc: true
       disable_phplint: true
-      disable_phpcpd: true
       disable_phpcs: true
       disable_grunt: true
