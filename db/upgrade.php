@@ -570,6 +570,14 @@ function hvp_upgrade_2020112600() {
     }
 }
 
+function hvp_upgrade_2026050600() {
+  global $DB;
+  $DB->execute("
+    UPDATE {hvp}
+    SET filtered = NULL
+  ");
+}
+
 /**
  * Add indexes to improve query performance
  *
@@ -752,6 +760,7 @@ function xmldb_hvp_upgrade($oldversion) {
         2023122501,
         2024112101,
         2024120903,
+        2026050600,
     ];
 
     foreach ($upgrades as $version) {

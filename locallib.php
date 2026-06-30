@@ -320,6 +320,7 @@ function hvp_admin_add_generic_css_and_js($page, $settings = null) {
     $page->requires->data_for_js('H5PAdminIntegration', $settings, true);
     $page->requires->css(generate_css_url('/mod/hvp/library/styles/h5p.css'));
     $page->requires->css(generate_css_url('/mod/hvp/library/styles/h5p-admin.css'));
+    $page->requires->css(generate_css_url('/mod/hvp/library/styles/h5p-fonts.css'));
 
     // Add settings.
     $page->requires->data_for_js('h5p', hvp_get_core_settings(\context_system::instance()), true);

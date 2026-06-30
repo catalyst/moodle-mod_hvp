@@ -1521,27 +1521,27 @@ class framework implements \H5PFrameworkInterface {
             'minor_version' => $minorversion
         ));
 
-        if ($library) {
-            $librarydata = array(
-                'libraryId' => $library->id,
-                'machineName' => $library->machine_name,
-                'title' => $library->title,
-                'majorVersion' => $library->major_version,
-                'minorVersion' => $library->minor_version,
-                'patchVersion' => $library->patch_version,
-                'embedTypes' => $library->embed_types,
-                'preloadedJs' => $library->preloaded_js,
-                'preloadedCss' => $library->preloaded_css,
-                'dropLibraryCss' => $library->drop_library_css,
-                'fullscreen' => $library->fullscreen,
-                'runnable' => $library->runnable,
-                'semantics' => $library->semantics,
-                'restricted' => $library->restricted,
-                'hasIcon' => $library->has_icon
-            );
-        } else {
-            return [];
+        if (!$library) {
+            return false;
         }
+
+        $librarydata = array(
+            'libraryId' => $library->id,
+            'machineName' => $library->machine_name,
+            'title' => $library->title,
+            'majorVersion' => $library->major_version,
+            'minorVersion' => $library->minor_version,
+            'patchVersion' => $library->patch_version,
+            'embedTypes' => $library->embed_types,
+            'preloadedJs' => $library->preloaded_js,
+            'preloadedCss' => $library->preloaded_css,
+            'dropLibraryCss' => $library->drop_library_css,
+            'fullscreen' => $library->fullscreen,
+            'runnable' => $library->runnable,
+            'semantics' => $library->semantics,
+            'restricted' => $library->restricted,
+            'hasIcon' => $library->has_icon
+        );
 
         $dependencies = $DB->get_records_sql(
                 'SELECT hl.id, hl.machine_name, hl.major_version, hl.minor_version, hll.dependency_type
@@ -1578,8 +1578,12 @@ class framework implements \H5PFrameworkInterface {
         $DB->execute("
             UPDATE {hvp}
             SET filtered = null
-            WHERE main_library_id $insql",
-            $inparams
+            WHERE id IN (
+                SELECT DISTINCT cl.hvp_id
+                FROM {hvp_contents_libraries} cl
+                WHERE library_id $insql
+            )",
+          $inparams
         );
     }
 
@@ -1928,5 +1932,16 @@ class framework implements \H5PFrameworkInterface {
     public function setContentHubMetadataChecked($time, $lang = 'en') {
         global $DB;
         $DB->execute("UPDATE {hvp_content_hub_cache} SET last_checked = ? WHERE language = ?", array($time, $lang));
+    }
+
+    /**
+     * @inheritdoc
+     */
+    // @codingStandardsIgnoreLine
+    public function resetHubOrganizationData() {
+        global $DB;
+
+        set_config('hub_secret', '', 'mod_hvp');
+        $DB->execute("UPDATE {hvp} SET hub_id = NULL, synced = NULL, shared = 0");
     }
 }
