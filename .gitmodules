@@ -1,12 +1,12 @@
-[submodule "library"]
-	path = library
-	url = https://github.com/h5p/h5p-php-library.git
-	branch = moodle
 [submodule "editor"]
+	branch = stable
 	path = editor
 	url = https://github.com/h5p/h5p-editor-php-library.git
-	branch = stable
+[submodule "library"]
+	branch = moodle
+	path = library
+	url = https://github.com/h5p/h5p-php-library.git
 [submodule "reporting"]
+	branch = stable
 	path = reporting
 	url = https://github.com/h5p/h5p-php-report.git
-	branch = stable
