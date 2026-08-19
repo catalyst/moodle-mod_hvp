@@ -731,6 +731,31 @@ function hvp_upgrade_2026050600() {
 }
 
 /**
+ * Migrate from hvp.completionpass to course_modules.completionpassgrade.
+ */
+function hvp_upgrade_2026090102() {
+    global $DB, $CFG;
+
+    // Moodle 4.0 added course_modules.completionpassgrade.
+    if ($CFG->branch < 400) {
+        return;
+    }
+
+    $moduleid = $DB->get_field('modules', 'id', ['name' => 'hvp']);
+
+    $sql = "UPDATE {course_modules} cm
+               SET completionpassgrade = 1
+             WHERE cm.module = :moduleid
+               AND cm.instance IN (
+                   SELECT h.id
+                     FROM {hvp} h
+                    WHERE h.completionpass = 1
+               )";
+    $DB->execute($sql, ['moduleid' => $moduleid]);
+    $DB->set_field('hvp', 'completionpass', 0, ['completionpass' => 1]);
+}
+
+/**
  * Hvp module upgrade function.
  *
  * @param string $oldversion The version we are upgrading from
@@ -761,6 +786,7 @@ function xmldb_hvp_upgrade($oldversion) {
         2024112101,
         2024120903,
         2026050600,
+        2026090102,
     ];
 
     foreach ($upgrades as $version) {
