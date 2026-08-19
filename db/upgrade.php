@@ -732,27 +732,11 @@ function hvp_upgrade_2026050600() {
 
 /**
  * Migrate from hvp.completionpass to course_modules.completionpassgrade.
+ *
+ * Note: On Moodle sites < 4.0, the migration will happen when possible.
  */
 function hvp_upgrade_2026090102() {
-    global $DB, $CFG;
-
-    // Moodle 4.0 added course_modules.completionpassgrade.
-    if ($CFG->branch < 400) {
-        return;
-    }
-
-    $moduleid = $DB->get_field('modules', 'id', ['name' => 'hvp']);
-
-    $sql = "UPDATE {course_modules} cm
-               SET completionpassgrade = 1
-             WHERE cm.module = :moduleid
-               AND cm.instance IN (
-                   SELECT h.id
-                     FROM {hvp} h
-                    WHERE h.completionpass = 1
-               )";
-    $DB->execute($sql, ['moduleid' => $moduleid]);
-    $DB->set_field('hvp', 'completionpass', 0, ['completionpass' => 1]);
+    \mod_hvp\task\migrate_completionpass::migrate();
 }
 
 /**
