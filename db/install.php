@@ -14,7 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+require_once(__DIR__ . '/upgradelib.php');
+
 function xmldb_hvp_install() {
+    global $DB;
+
+    if (!$DB->record_exists('hvp_library_release_state', ['id' => 1])) {
+        $time = time();
+        $DB->insert_record_raw('hvp_library_release_state', [
+            'id' => 1,
+            'migrationstatus' => HVP_LIBRARY_RELEASE_STATUS_PENDING,
+            'timecreated' => $time,
+            'timemodified' => $time,
+        ], false, false, true);
+    }
 
     // Try to install all the default content types.
     require_once(__DIR__ . '/../autoloader.php');

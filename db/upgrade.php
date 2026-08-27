@@ -23,6 +23,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+require_once(__DIR__ . '/upgradelib.php');
+
 /**
  * Adds data for tracking when content was created and last modified.
  */
@@ -731,6 +733,43 @@ function hvp_upgrade_2026050600() {
 }
 
 /**
+ * Adds the library release companion schema.
+ */
+function hvp_upgrade_2026082600() {
+    global $DB;
+
+    $dbman = $DB->get_manager();
+    foreach (hvp_library_release_schema_tables() as $table) {
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+            continue;
+        }
+
+        foreach ($table->getFields() as $field) {
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        foreach ($table->getIndexes() as $index) {
+            if (!$dbman->index_exists($table, $index)) {
+                $dbman->add_index($table, $index);
+            }
+        }
+    }
+
+    if (!$DB->record_exists('hvp_library_release_state', ['id' => 1])) {
+        $time = time();
+        $DB->insert_record_raw('hvp_library_release_state', [
+            'id' => 1,
+            'migrationstatus' => HVP_LIBRARY_RELEASE_STATUS_PENDING,
+            'timecreated' => $time,
+            'timemodified' => $time,
+        ], false, false, true);
+    }
+}
+
+/**
  * Hvp module upgrade function.
  *
  * @param string $oldversion The version we are upgrading from
@@ -761,6 +800,7 @@ function xmldb_hvp_upgrade($oldversion) {
         2024112101,
         2024120903,
         2026050600,
+        2026082600,
     ];
 
     foreach ($upgrades as $version) {

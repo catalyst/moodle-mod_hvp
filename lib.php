@@ -271,6 +271,25 @@ function hvp_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload
 
             $itemid = 0;
             break;
+
+        case 'library_release_artifacts':
+            if ($context->contextlevel != CONTEXT_SYSTEM || empty($args)) {
+                return false; // Invalid context or artifact.
+            }
+
+            $itemid = clean_param(array_shift($args), PARAM_INT);
+            if ($itemid < 1) {
+                return false; // Invalid artifact.
+            }
+
+            if (!\mod_hvp\library_release_artifact_storage::is_available_for_serving($itemid)) {
+                return false; // Artifact is not published.
+            }
+
+            $options['cacheability'] = 'public';
+            $options['immutable'] = true;
+            break;
+
         case 'cachedassets':
             if ($context->contextlevel != CONTEXT_SYSTEM) {
                 return false; // Invalid context.
