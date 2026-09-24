@@ -38,7 +38,7 @@ final class look_for_updates_test extends \advanced_testcase {
     public function test_execute(
         int $hubisenabled,
         int $sendusagestatistics,
-        bool $expectearlyexit,
+        bool $expectearlyexit
     ): void {
         $this->resetAfterTest();
 
