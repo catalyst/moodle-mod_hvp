@@ -28,5 +28,5 @@ $plugin->requires  = 2022112800; // 4.1.0
 $plugin->cron      = 0;
 $plugin->component = 'mod_hvp';
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->supported = [401, 404];
+$plugin->supported = [401, 503];
 $plugin->release   = '1.28.4';
