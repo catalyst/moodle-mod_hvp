@@ -740,6 +740,26 @@ function hvp_upgrade_2026090102() {
 }
 
 /**
+ * Add an index to improve content user data lookups.
+ */
+function hvp_upgrade_2026102700() {
+    global $DB;
+
+    $dbman = $DB->get_manager();
+
+    $table = new xmldb_table('hvp_content_user_data');
+    $index = new xmldb_index(
+        'user_data',
+        XMLDB_INDEX_NOTUNIQUE,
+        ['user_id', 'hvp_id', 'sub_content_id', 'data_id']
+    );
+
+    if (!$dbman->index_exists($table, $index)) {
+        $dbman->add_index($table, $index);
+    }
+}
+
+/**
  * Hvp module upgrade function.
  *
  * @param string $oldversion The version we are upgrading from
@@ -771,6 +791,7 @@ function xmldb_hvp_upgrade($oldversion) {
         2024120903,
         2026050600,
         2026090102,
+        2026102700,
     ];
 
     foreach ($upgrades as $version) {
