@@ -742,7 +742,7 @@ function hvp_upgrade_2026090102() {
 /**
  * Add an index to improve content user data lookups.
  */
-function hvp_upgrade_2026102700() {
+function hvp_upgrade_2026102800() {
     global $DB;
 
     $dbman = $DB->get_manager();
@@ -751,7 +751,7 @@ function hvp_upgrade_2026102700() {
     $index = new xmldb_index(
         'user_data',
         XMLDB_INDEX_NOTUNIQUE,
-        ['user_id', 'hvp_id', 'sub_content_id', 'data_id']
+        ['hvp_id', 'user_id', 'sub_content_id', 'data_id']
     );
 
     if (!$dbman->index_exists($table, $index)) {
@@ -791,7 +791,7 @@ function xmldb_hvp_upgrade($oldversion) {
         2024120903,
         2026050600,
         2026090102,
-        2026102700,
+        2026102800,
     ];
 
     foreach ($upgrades as $version) {
