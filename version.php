@@ -30,3 +30,4 @@ $plugin->component = 'mod_hvp';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->supported = [401, 405];
 $plugin->release   = '1.28.4';
+$plugin->release   = '1.28.5';
