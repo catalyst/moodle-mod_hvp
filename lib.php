@@ -441,7 +441,8 @@ function hvp_grade_item_update($hvp, $grades=null) {
         $grades = null;
     }
 
-    return grade_update('mod/hvp', $hvp->course, 'mod', 'hvp', $hvp->id, 0, $grades, $params);
+    return grade_update('mod/hvp', $hvp->course, 'mod', 'hvp', $hvp->id,
+            \mod_hvp\grades\gradeitems::GRADE_ITEM_NUMBER, $grades, $params);
 }
 
 /**

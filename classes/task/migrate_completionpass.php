@@ -39,7 +39,7 @@ class migrate_completionpass extends \core\task\adhoc_task {
     }
 
     /**
-     * Migrate legacy hvp.completionpass values to course_modules.completionpassgrade.
+     * Migrate legacy passing grade rules on HVP activities and completion defaults.
      *
      * On Moodle < 4.0 the core field does not exist yet, so an ad-hoc task is
      * queued to retry the migration later instead.
@@ -59,6 +59,58 @@ class migrate_completionpass extends \core\task\adhoc_task {
         if (!$moduleid) {
             return;
         }
+
+        $defaults = $DB->get_recordset_select('course_completion_defaults',
+                'module = :moduleid AND customrules IS NOT NULL', ['moduleid' => $moduleid]);
+        try {
+            foreach ($defaults as $default) {
+                if (strpos($default->customrules, '"completionpass"') === false) {
+                    continue;
+                }
+
+                // Core ignores customrules it cannot decode, so skip these rather than failing the upgrade.
+                $rules = json_decode($default->customrules);
+                if (!$rules instanceof \stdClass) {
+                    mtrace("Skipping HVP completion defaults record {$default->id}: " .
+                            "customrules is not a valid JSON object.");
+                    continue;
+                }
+                if (!property_exists($rules, 'completionpass')) {
+                    continue;
+                }
+
+                $legacyenabled = !empty($rules->completionpass);
+                unset($rules->completionpass);
+                $update = (object) [
+                    'id' => $default->id,
+                    'customrules' => get_object_vars($rules) ? json_encode($rules, JSON_THROW_ON_ERROR) : null,
+                ];
+                if ($legacyenabled) {
+                    $update->completionusegrade = 1;
+                    $update->completionpassgrade = 1;
+                }
+                $DB->update_record('course_completion_defaults', $update);
+            }
+        } finally {
+            $defaults->close();
+        }
+
+        require_once($CFG->libdir . '/completionlib.php');
+        $sql = "UPDATE {course_modules}
+                   SET completiongradeitemnumber = :gradeitemnumber
+                 WHERE module = :moduleid
+                   AND completion = :automatic
+                   AND completiongradeitemnumber IS NULL
+                   AND instance IN (
+                       SELECT id
+                         FROM {hvp}
+                        WHERE completionpass = 1
+                   )";
+        $DB->execute($sql, [
+            'gradeitemnumber' => \mod_hvp\grades\gradeitems::GRADE_ITEM_NUMBER,
+            'moduleid' => $moduleid,
+            'automatic' => COMPLETION_TRACKING_AUTOMATIC,
+        ]);
 
         $sql = "UPDATE {course_modules}
                    SET completionpassgrade = 1

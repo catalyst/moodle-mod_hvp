@@ -84,14 +84,15 @@ class restore_hvp_activity_structure_step extends restore_activity_structure_ste
         // Immediately after inserting "activity" record, call this.
         $this->apply_activity_instance($newitemid);
 
-        // On Moodle 4.0+, migrate hvp completionpass to core completionpassgrade.
+        // Versions using the core rule always clear completionpass, so a set value means the legacy rule was enabled.
         if ($CFG->branch >= 400 && !empty($data->completionpass)) {
-            $moduleid = $DB->get_field('modules', 'id', ['name' => 'hvp']);
-            $where = [
-                'instance' => $newitemid,
-                'module' => $moduleid,
-            ];
-            $DB->set_field('course_modules', 'completionpassgrade', 1, $where);
+            $cm = $DB->get_record('course_modules', ['id' => $this->task->get_moduleid()],
+                    'id, completion, completiongradeitemnumber', MUST_EXIST);
+            $update = (object) ['id' => $cm->id, 'completionpassgrade' => 1];
+            if ($cm->completion == COMPLETION_TRACKING_AUTOMATIC && $cm->completiongradeitemnumber === null) {
+                $update->completiongradeitemnumber = \mod_hvp\grades\gradeitems::GRADE_ITEM_NUMBER;
+            }
+            $DB->update_record('course_modules', $update);
             $DB->set_field('hvp', 'completionpass', 0, ['id' => $newitemid]);
         }
     }
