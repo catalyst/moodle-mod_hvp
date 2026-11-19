@@ -580,3 +580,12 @@ function hvp_get_coursemodule_info($coursemodule) {
 function hvp_is_branded(): bool {
     return true;
 }
+
+/**
+ * Adds the H5P Content Hub account check to the security checks report.
+ *
+ * @return \core\check\check[]
+ */
+function mod_hvp_security_checks() {
+    return [new \mod_hvp\check\hub_account()];
+}
