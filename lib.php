@@ -49,6 +49,8 @@ require_once($CFG->dirroot . '/lib/csslib.php');
  * @return mixed true if the feature is supported, null if unknown
  */
 function hvp_supports($feature) {
+    global $CFG;
+
     // Totara compatibility.
     if (defined('FEATURE_MOD_PURPOSE') && $feature == FEATURE_MOD_PURPOSE) {
         return MOD_PURPOSE_CONTENT;
@@ -64,7 +66,8 @@ function hvp_supports($feature) {
         case FEATURE_COMPLETION_TRACKS_VIEWS:
             return true;
         case FEATURE_COMPLETION_HAS_RULES:
-            return true;
+            // Moodle 4.0+ has its own passing grade completion rule.
+            return ($CFG->branch < 400);
         case FEATURE_GRADE_HAS_GRADE:
             return true;
         case FEATURE_GRADE_OUTCOMES:
@@ -438,7 +441,8 @@ function hvp_grade_item_update($hvp, $grades=null) {
         $grades = null;
     }
 
-    return grade_update('mod/hvp', $hvp->course, 'mod', 'hvp', $hvp->id, 0, $grades, $params);
+    return grade_update('mod/hvp', $hvp->course, 'mod', 'hvp', $hvp->id,
+            \mod_hvp\grades\gradeitems::GRADE_ITEM_NUMBER, $grades, $params);
 }
 
 /**
@@ -474,6 +478,12 @@ function hvp_update_grades($hvp=null, $userid=0, $nullifnone=true) {
  */
 function hvp_get_completion_state($course, $cm, $userid, $type) {
     global $DB, $CFG;
+
+    // On Moodle 4.0+, use the core passing grade rule.
+    if ($CFG->branch >= 400) {
+        return $type;
+    }
+
     $hvp = $DB->get_record('hvp', array('id' => $cm->instance), '*', MUST_EXIST);
     if (!$hvp->completionpass) {
         return $type;
@@ -550,7 +560,7 @@ function mod_hvp_core_calendar_provide_event_action(calendar_event $event, actio
  *                        will know about (most noticeably, an icon).
  */
 function hvp_get_coursemodule_info($coursemodule) {
-    global $DB;
+    global $CFG, $DB;
 
     if (!$hvp = $DB->get_record('hvp', array('id' => $coursemodule->instance), '*')) {
         return null;
@@ -559,7 +569,7 @@ function hvp_get_coursemodule_info($coursemodule) {
     $info = new cached_cm_info();
 
     // Populate the custom completion rules as key => value pairs, but only if the completion mode is 'automatic'.
-    if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
+    if ($CFG->branch < 400 && $coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
         $info->customdata['customcompletionrules']['completionpass'] = $hvp->completionpass;
     }
 
