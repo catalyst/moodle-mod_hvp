@@ -78,6 +78,7 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="user_id-hvp_id-sub_content_id" UNIQUE="false" FIELDS="user_id, hvp_id, sub_content_id"/>
+        <INDEX NAME="user_data" UNIQUE="false" FIELDS="hvp_id, user_id, sub_content_id, data_id"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="hvp_libraries" COMMENT="Stores information about libraries.">
